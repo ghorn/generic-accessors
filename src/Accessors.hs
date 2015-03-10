@@ -24,7 +24,7 @@ import Data.Int
 import Foreign.C.Types
 
 import SpatialMath ( Euler )
-import SpatialMathT ( V3T, Rot )
+import SpatialMathT ( V3T(..), Rot(..) )
 
 showAccTree :: String -> AccessorTree a -> [String]
 showAccTree spaces (ATGetter _) = [spaces ++ "ATGetter {}"]
@@ -240,8 +240,10 @@ instance Lookup CDouble where
   toAccessorTree _ f = ATGetter $ realToFrac . f
 
 -- other types
-instance Lookup a => Lookup (Rot f1 f2 a)
-instance Lookup a => Lookup (V3T f a)
+instance Lookup a => Lookup (Rot f1 f2 a) where
+  toAccessorTree x f = toAccessorTree (unR x) (unR . f)
+instance Lookup a => Lookup (V3T f a) where
+  toAccessorTree x f = toAccessorTree (unV x) (unV . f)
 instance Lookup a => Lookup (Euler a)
 
 showAccTrees :: (Double -> String) -> a -> [(String, AccessorTree a)] -> String -> [String]
