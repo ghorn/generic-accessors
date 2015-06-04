@@ -10,6 +10,7 @@ module Accessors
        ( Lookup(..)
        , AccessorTree(..)
        , Setter(..)
+       , Getter(..)
        , accessors
        , flatten
        , showTree
@@ -41,14 +42,21 @@ instance Show (AccessorTree a) where
   show = unlines . showAccTree ""
 
 data AccessorTree a = Data (String,String) [(String, AccessorTree a)]
-                    | ATGetter (a -> Double, Setter a)
+                    | ATGetter (Getter a, Setter a)
+
+data Getter a =
+  GetBool (a -> Bool)
+  | GetDouble (a -> Double)
+  | GetFloat (a -> Float)
+  | GetInt (a -> Int)
+  | GetSorry -- ^ not yet implemented
 
 data Setter a =
   SetBool (Bool -> a)
   | SetDouble (Double -> a)
   | SetFloat (Float -> a)
   | SetInt (Int -> a)
-  | Sorry -- ^ not yet implemented
+  | SetSorry -- ^ not yet implemented
 
 accessors :: Lookup a => a -> AccessorTree a
 accessors x = toAccessorTree x id id
@@ -57,10 +65,10 @@ accessors x = toAccessorTree x id id
 showMsgs :: [String] -> String
 showMsgs = intercalate "."
 
-flatten :: AccessorTree a -> [(String, a -> Double, Setter a)]
+flatten :: AccessorTree a -> [(String, Getter a, Setter a)]
 flatten = flatten' []
 
-flatten' :: [String] -> AccessorTree a -> [(String, a -> Double, Setter a)]
+flatten' :: [String] -> AccessorTree a -> [(String, Getter a, Setter a)]
 flatten' msgs (ATGetter (get, set)) = [(showMsgs (reverse msgs), get, set)]
 flatten' msgs (Data (_,_) trees) = concatMap f trees
   where
@@ -182,89 +190,90 @@ instance (Datatype d, Constructor c, GLookupS a) => GLookup (D1 d (C1 c a)) wher
 
 -- basic types
 instance Lookup () where -- hack to get dummy tree
-  toAccessorTree _ _ _ = ATGetter (const 0, Sorry)
+  toAccessorTree _ _ _ = ATGetter (GetSorry, SetSorry)
 instance Lookup Int where
-  toAccessorTree _ get set = ATGetter (realToFrac . get, SetInt set)
+  toAccessorTree _ get set = ATGetter (GetInt get, SetInt set)
 instance Lookup Float where
-  toAccessorTree _ get set = ATGetter (realToFrac . get, SetFloat set)
+  toAccessorTree _ get set = ATGetter (GetFloat get, SetFloat set)
 instance Lookup Double where
-  toAccessorTree _ get set = ATGetter (realToFrac . get, SetDouble set)
+  toAccessorTree _ get set = ATGetter (GetDouble get, SetDouble set)
 instance Lookup Bool where
-  toAccessorTree _ get set = ATGetter (realToFrac . fromEnum . get, SetBool set)
+  toAccessorTree _ get set = ATGetter (GetBool get, SetBool set)
 
 -- Word types
 instance Lookup Word where
-  toAccessorTree _ get _ = ATGetter (realToFrac . get, Sorry)
+  toAccessorTree _ get _ = ATGetter (GetDouble (realToFrac . get), SetSorry)
 instance Lookup Word8 where
-  toAccessorTree _ get _ = ATGetter (realToFrac . get, Sorry)
+  toAccessorTree _ get _ = ATGetter (GetDouble (realToFrac . get), SetSorry)
 instance Lookup Word16 where
-  toAccessorTree _ get _ = ATGetter (realToFrac . get, Sorry)
+  toAccessorTree _ get _ = ATGetter (GetDouble (realToFrac . get), SetSorry)
 instance Lookup Word32 where
-  toAccessorTree _ get _ = ATGetter (realToFrac . get, Sorry)
+  toAccessorTree _ get _ = ATGetter (GetDouble (realToFrac . get), SetSorry)
 instance Lookup Word64 where
-  toAccessorTree _ get _ = ATGetter (realToFrac . get, Sorry)
+  toAccessorTree _ get _ = ATGetter (GetDouble (realToFrac . get), SetSorry)
 
 -- Int types
 instance Lookup Int8 where
-  toAccessorTree _ get _ = ATGetter (realToFrac . get, Sorry)
+  toAccessorTree _ get _ = ATGetter (GetInt (fromIntegral . get), SetSorry)
 instance Lookup Int16 where
-  toAccessorTree _ get _ = ATGetter (realToFrac . get, Sorry)
+  toAccessorTree _ get _ = ATGetter (GetInt (fromIntegral . get), SetSorry)
 instance Lookup Int32 where
-  toAccessorTree _ get _ = ATGetter (realToFrac . get, Sorry)
+  toAccessorTree _ get _ = ATGetter (GetInt (fromIntegral . get), SetSorry)
 instance Lookup Int64 where
-  toAccessorTree _ get _ = ATGetter (realToFrac . get, Sorry)
+  toAccessorTree _ get _ = ATGetter (GetInt (fromIntegral . get), SetSorry)
 
+-- todo(greg): some of these getters can fit in ints
 -- C types
 instance Lookup CChar where
-  toAccessorTree _ get _set = ATGetter (realToFrac . get, Sorry)
+  toAccessorTree _ get _set = ATGetter (GetDouble (realToFrac . get), SetSorry)
 instance Lookup CSChar where
-  toAccessorTree _ get _set = ATGetter (realToFrac . get, Sorry)
+  toAccessorTree _ get _set = ATGetter (GetDouble (realToFrac . get), SetSorry)
 instance Lookup CUChar where
-  toAccessorTree _ get _set = ATGetter (realToFrac . get, Sorry)
+  toAccessorTree _ get _set = ATGetter (GetDouble (realToFrac . get), SetSorry)
 instance Lookup CShort where
-  toAccessorTree _ get _set = ATGetter (realToFrac . get, Sorry)
+  toAccessorTree _ get _set = ATGetter (GetDouble (realToFrac . get), SetSorry)
 instance Lookup CUShort where
-  toAccessorTree _ get _set = ATGetter (realToFrac . get, Sorry)
+  toAccessorTree _ get _set = ATGetter (GetDouble (realToFrac . get), SetSorry)
 instance Lookup CInt where
-  toAccessorTree _ get _set = ATGetter (realToFrac . get, Sorry)
+  toAccessorTree _ get _set = ATGetter (GetDouble (realToFrac . get), SetSorry)
 instance Lookup CUInt where
-  toAccessorTree _ get _set = ATGetter (realToFrac . get, Sorry)
+  toAccessorTree _ get _set = ATGetter (GetDouble (realToFrac . get), SetSorry)
 instance Lookup CLong where
-  toAccessorTree _ get _set = ATGetter (realToFrac . get, Sorry)
+  toAccessorTree _ get _set = ATGetter (GetDouble (realToFrac . get), SetSorry)
 instance Lookup CULong where
-  toAccessorTree _ get _set = ATGetter (realToFrac . get, Sorry)
+  toAccessorTree _ get _set = ATGetter (GetDouble (realToFrac . get), SetSorry)
 instance Lookup CPtrdiff where
-  toAccessorTree _ get _set = ATGetter (realToFrac . get, Sorry)
+  toAccessorTree _ get _set = ATGetter (GetDouble (realToFrac . get), SetSorry)
 instance Lookup CSize where
-  toAccessorTree _ get _set = ATGetter (realToFrac . get, Sorry)
+  toAccessorTree _ get _set = ATGetter (GetDouble (realToFrac . get), SetSorry)
 instance Lookup CWchar where
-  toAccessorTree _ get _set = ATGetter (realToFrac . get, Sorry)
+  toAccessorTree _ get _set = ATGetter (GetDouble (realToFrac . get), SetSorry)
 instance Lookup CSigAtomic where
-  toAccessorTree _ get _set = ATGetter (realToFrac . get, Sorry)
+  toAccessorTree _ get _set = ATGetter (GetDouble (realToFrac . get), SetSorry)
 instance Lookup CLLong where
-  toAccessorTree _ get _set = ATGetter (realToFrac . get, Sorry)
+  toAccessorTree _ get _set = ATGetter (GetDouble (realToFrac . get), SetSorry)
 instance Lookup CULLong where
-  toAccessorTree _ get _set = ATGetter (realToFrac . get, Sorry)
+  toAccessorTree _ get _set = ATGetter (GetDouble (realToFrac . get), SetSorry)
 instance Lookup CIntPtr where
-  toAccessorTree _ get _set = ATGetter (realToFrac . get, Sorry)
+  toAccessorTree _ get _set = ATGetter (GetDouble (realToFrac . get), SetSorry)
 instance Lookup CUIntPtr where
-  toAccessorTree _ get _set = ATGetter (realToFrac . get, Sorry)
+  toAccessorTree _ get _set = ATGetter (GetDouble (realToFrac . get), SetSorry)
 instance Lookup CIntMax where
-  toAccessorTree _ get _set = ATGetter (realToFrac . get, Sorry)
+  toAccessorTree _ get _set = ATGetter (GetDouble (realToFrac . get), SetSorry)
 instance Lookup CUIntMax where
-  toAccessorTree _ get _set = ATGetter (realToFrac . get, Sorry)
+  toAccessorTree _ get _set = ATGetter (GetDouble (realToFrac . get), SetSorry)
 instance Lookup CClock where
-  toAccessorTree _ get _set = ATGetter (realToFrac . get, Sorry)
+  toAccessorTree _ get _set = ATGetter (GetDouble (realToFrac . get), SetSorry)
 instance Lookup CTime where
-  toAccessorTree _ get _set = ATGetter (realToFrac . get, Sorry)
+  toAccessorTree _ get _set = ATGetter (GetDouble (realToFrac . get), SetSorry)
 instance Lookup CUSeconds where
-  toAccessorTree _ get _set = ATGetter (realToFrac . get, Sorry)
+  toAccessorTree _ get _set = ATGetter (GetDouble (realToFrac . get), SetSorry)
 instance Lookup CSUSeconds where
-  toAccessorTree _ get _set = ATGetter (realToFrac . get, Sorry)
+  toAccessorTree _ get _set = ATGetter (GetDouble (realToFrac . get), SetSorry)
 instance Lookup CFloat where
-  toAccessorTree _ get set = ATGetter (realToFrac . get, SetFloat (set . realToFrac))
+  toAccessorTree _ get set = ATGetter (GetFloat (realToFrac . get), SetFloat (set . realToFrac))
 instance Lookup CDouble where
-  toAccessorTree _ get set = ATGetter (realToFrac . get, SetDouble (set . realToFrac))
+  toAccessorTree _ get set = ATGetter (GetDouble (realToFrac . get), SetDouble (set . realToFrac))
 
 -- other types
 instance Lookup a => Lookup (Rot f1 f2 a) where
@@ -273,39 +282,39 @@ instance Lookup a => Lookup (V3T f a) where
   toAccessorTree x get set = toAccessorTree (unV x) (unV . get) (set . V3T)
 instance Lookup a => Lookup (Euler a)
 
-showAccTrees :: (Double -> String) -> a -> [(String, AccessorTree a)] -> String -> [String]
-showAccTrees show' x trees spaces = concat cs ++ [spaces ++ "}"]
+showAccTrees :: (Getter a -> String) -> [(String, AccessorTree a)] -> String -> [String]
+showAccTrees show' trees spaces = concat cs ++ [spaces ++ "}"]
   where
-    cs = zipWith (showRecordField show' x spaces) trees ("{ " : repeat ", ")
+    cs = zipWith (showRecordField show' spaces) trees ("{ " : repeat ", ")
 
-showRecordField :: (Double -> String) -> a -> String -> (String, AccessorTree a) -> String -> [String]
-showRecordField show' x spaces (getterName, ATGetter (get, _)) prefix =
-  [spaces ++ prefix ++ getterName ++ " = " ++ show' (get x)]
-showRecordField show' x spaces (getterName, Data (_,cons) trees) prefix =
-  (spaces ++ prefixNameEq ++ cons) : showAccTrees show' x trees newSpaces
+showRecordField :: (Getter a -> String) -> String -> (String, AccessorTree a) -> String -> [String]
+showRecordField show' spaces (getterName, ATGetter (get, _)) prefix =
+  [spaces ++ prefix ++ getterName ++ " = " ++ show' get]
+showRecordField show' spaces (getterName, Data (_,cons) trees) prefix =
+  (spaces ++ prefixNameEq ++ cons) : showAccTrees show' trees newSpaces
   where
     prefixNameEq = prefix ++ getterName ++ " = "
     newSpaces = spaces ++ (replicate (length prefixNameEq) ' ')
 
 -- | Show a tree of values
-showTree :: AccessorTree a -> (Double -> String) -> a -> String
-showTree (Data (_,cons) trees) show' x = init $ unlines $ cons : showAccTrees show' x trees ""
-showTree (ATGetter (get,_)) show' x = show' (get x)
+showTree :: AccessorTree a -> (Getter a -> String) -> String
+showTree (Data (_,cons) trees) show' = init $ unlines $ cons : showAccTrees show' trees ""
+showTree (ATGetter (get,_)) show' = show' get
 
 -- | Show a list of values
 -- .
 -- True --> align the colums, False --> total mayhem
-showFlat :: forall a . AccessorTree a -> Bool -> (Double -> String) -> a -> String
-showFlat at align show' x = init $ unlines $ map f fl
+showFlat :: forall a . AccessorTree a -> Bool -> (Getter a -> String) -> String
+showFlat at align show' = init $ unlines $ map f fl
   where
     fst3 (z,_,_) = z
     n = maximum (map (length . fst3) fl)
 
-    f (name, get, _) = name ++ spaces ++ " = " ++ show' (get x)
+    f (name, get, _) = name ++ spaces ++ " = " ++ show' get
       where
         spaces
           | align = replicate (n - length name) ' '
           | otherwise = ""
 
-    fl :: [(String, a -> Double, Setter a)]
+    fl :: [(String, Getter a, Setter a)]
     fl = flatten at
