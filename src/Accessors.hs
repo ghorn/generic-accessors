@@ -52,14 +52,14 @@ data Getter a =
   | GetSorry -- ^ not yet implemented
 
 data Setter a =
-  SetBool (Bool -> a)
-  | SetDouble (Double -> a)
-  | SetFloat (Float -> a)
-  | SetInt (Int -> a)
+  SetBool (Bool -> a -> a)
+  | SetDouble (Double -> a -> a)
+  | SetFloat (Float -> a -> a)
+  | SetInt (Int -> a -> a)
   | SetSorry -- ^ not yet implemented
 
 accessors :: Lookup a => a -> AccessorTree a
-accessors x = toAccessorTree x id id
+accessors x = toAccessorTree x id (\new _ -> new)
 --accessors = flip (flip toAccessorTree id) id
 
 showMsgs :: [String] -> String
@@ -77,16 +77,16 @@ flatten' msgs (Data (_,_) trees) = concatMap f trees
 -- | Things which you can make a tree of labeled getters for.
 -- You should derive this using GHC.Generics.
 class Lookup a where
-  toAccessorTree :: a -> (b -> a) -> (a -> b) -> AccessorTree b
+  toAccessorTree :: a -> (b -> a) -> (a -> b -> b) -> AccessorTree b
 
-  default toAccessorTree :: (Generic a, GLookup (Rep a)) => a -> (b -> a) -> (a -> b) -> AccessorTree b
+  default toAccessorTree :: (Generic a, GLookup (Rep a)) => a -> (b -> a) -> (a -> b -> b) -> AccessorTree b
   toAccessorTree x get set = gtoAccessorTree (from x) (from . get) (set . to)
 
 class GLookup f where
-  gtoAccessorTree :: f a -> (b -> f a) -> (f a -> b) -> AccessorTree b
+  gtoAccessorTree :: f a -> (b -> f a) -> (f a -> b -> b) -> AccessorTree b
 
 class GLookupS f where
-  gtoAccessorTreeS :: f a -> (b -> f a) -> (f a -> b) -> [(String, AccessorTree b)]
+  gtoAccessorTreeS :: f a -> (b -> f a) -> (f a -> b -> b) -> [(String, AccessorTree b)]
 
 -- some instance from linear
 instance Lookup a => Lookup (Linear.V0 a) where
@@ -94,57 +94,73 @@ instance Lookup a => Lookup (Linear.V0 a) where
     Data ("V0", "V0") []
 instance Lookup a => Lookup (Linear.V1 a) where
   toAccessorTree xyz get set =
-    Data ("V1", "V1") [ ("x", toAccessorTree (getX xyz) (getX . get) (set . setX))
+    Data ("V1", "V1") [ ("x", toAccessorTree (getX xyz) (getX . get) setX)
                       ]
     where
       getX (Linear.V1 x) = x
-      setX x = Linear.V1 x
+      setX x new = set (Linear.V1 x) new
 instance Lookup a => Lookup (Linear.V2 a) where
   toAccessorTree (Linear.V2 x0 y0) get set =
-    Data ("V2", "V2") [ ("x", toAccessorTree x0 (getX . get) (set . setX))
-                      , ("y", toAccessorTree y0 (getY . get) (set . setY))
+    Data ("V2", "V2") [ ("x", toAccessorTree x0 (getX . get) setX)
+                      , ("y", toAccessorTree y0 (getY . get) setY)
                       ]
     where
       getX (Linear.V2 x _) = x
       getY (Linear.V2 _ y) = y
-      setX x = Linear.V2 x  y0
-      setY y = Linear.V2 x0 y
+
+      setX x new = set (Linear.V2 x (getY (get new))) new
+      setY y new = set (Linear.V2 (getX (get new)) y) new
+
 instance Lookup a => Lookup (Linear.V3 a) where
   toAccessorTree (Linear.V3 x0 y0 z0) get set =
-    Data ("V3", "V3") [ ("x", toAccessorTree x0 (getX . get) (set . setX))
-                      , ("y", toAccessorTree y0 (getY . get) (set . setY))
-                      , ("z", toAccessorTree z0 (getZ . get) (set . setZ))
+    Data ("V3", "V3") [ ("x", toAccessorTree x0 (getX . get) setX)
+                      , ("y", toAccessorTree y0 (getY . get) setY)
+                      , ("z", toAccessorTree z0 (getZ . get) setZ)
                       ]
     where
       getX (Linear.V3 x _ _) = x
       getY (Linear.V3 _ y _) = y
       getZ (Linear.V3 _ _ z) = z
-      setX x = Linear.V3 x  y0 z0
-      setY y = Linear.V3 x0 y  z0
-      setZ z = Linear.V3 x0 y0 z
+      setX x new = set (Linear.V3 x y z) new
+        where
+          Linear.V3 _ y z = get new
+      setY y new = set (Linear.V3 x y z) new
+        where
+          Linear.V3 x _ z = get new
+      setZ z new = set (Linear.V3 x y z) new
+        where
+          Linear.V3 x y _ = get new
 instance Lookup a => Lookup (Linear.V4 a) where
   toAccessorTree (Linear.V4 x0 y0 z0 w0) get set =
-    Data ("V4", "V4") [ ("x", toAccessorTree x0 (getX . get) (set . setX))
-                      , ("y", toAccessorTree y0 (getY . get) (set . setY))
-                      , ("z", toAccessorTree z0 (getZ . get) (set . setZ))
-                      , ("w", toAccessorTree w0 (getW . get) (set . setW))
+    Data ("V4", "V4") [ ("x", toAccessorTree x0 (getX . get) setX)
+                      , ("y", toAccessorTree y0 (getY . get) setY)
+                      , ("z", toAccessorTree z0 (getZ . get) setZ)
+                      , ("w", toAccessorTree w0 (getW . get) setW)
                       ]
     where
       getX (Linear.V4 x _ _ _) = x
       getY (Linear.V4 _ y _ _) = y
       getZ (Linear.V4 _ _ z _) = z
       getW (Linear.V4 _ _ _ w) = w
-      setX x = Linear.V4 x  y0 z0 w0
-      setY y = Linear.V4 x0 y  z0 w0
-      setZ z = Linear.V4 x0 y0 z  w0
-      setW w = Linear.V4 x0 y0 z0 w
+      setX x new = set (Linear.V4 x y z w) new
+        where
+          Linear.V4 _ y z w = get new
+      setY y new = set (Linear.V4 x y z w) new
+        where
+          Linear.V4 x _ z w = get new
+      setZ z new = set (Linear.V4 x y z w) new
+        where
+          Linear.V4 x y _ w = get new
+      setW w new = set (Linear.V4 x y z w) new
+        where
+          Linear.V4 x y z _ = get new
 instance Lookup a => Lookup (Linear.Quaternion a) where
   toAccessorTree (Linear.Quaternion q0 (Linear.V3 x0 y0 z0)) get set =
     Data ("Quaternion", "Quaternion")
-    [ ("q0", toAccessorTree q0 (getQ0 . get) (set . setQ0))
-    , ("q1", toAccessorTree x0 (getQ1 . get) (set . setQ1))
-    , ("q2", toAccessorTree y0 (getQ2 . get) (set . setQ2))
-    , ("q3", toAccessorTree z0 (getQ3 . get) (set . setQ3))
+    [ ("q0", toAccessorTree q0 (getQ0 . get) setQ0)
+    , ("q1", toAccessorTree x0 (getQ1 . get) setQ1)
+    , ("q2", toAccessorTree y0 (getQ2 . get) setQ2)
+    , ("q3", toAccessorTree z0 (getQ3 . get) setQ3)
     ]
     where
       getQ0 (Linear.Quaternion q _) = q
@@ -152,10 +168,18 @@ instance Lookup a => Lookup (Linear.Quaternion a) where
       getQ2 (Linear.Quaternion _ (Linear.V3 _ y _)) = y
       getQ3 (Linear.Quaternion _ (Linear.V3 _ _ z)) = z
 
-      setQ0 q = (Linear.Quaternion q  (Linear.V3 x0 y0 z0))
-      setQ1 x = (Linear.Quaternion q0 (Linear.V3 x  y0 z0))
-      setQ2 y = (Linear.Quaternion q0 (Linear.V3 x0 y  z0))
-      setQ3 z = (Linear.Quaternion q0 (Linear.V3 x0 y0 z ))
+      setQ0 q new = set (Linear.Quaternion q (Linear.V3 x y z)) new
+        where
+          Linear.Quaternion _ (Linear.V3 x y z) = get new
+      setQ1 x new = set (Linear.Quaternion q (Linear.V3 x y z)) new
+        where
+          Linear.Quaternion q (Linear.V3 _ y z) = get new
+      setQ2 y new = set (Linear.Quaternion q (Linear.V3 x y z)) new
+        where
+          Linear.Quaternion q (Linear.V3 x _ z) = get new
+      setQ3 z new = set (Linear.Quaternion q (Linear.V3 x y z)) new
+        where
+          Linear.Quaternion q (Linear.V3 x y _) = get new
 
 
 instance Lookup f => GLookup (Rec0 f) where
@@ -172,16 +196,16 @@ instance GLookupS U1 where
   gtoAccessorTreeS _ _ _ = []
 
 instance (GLookupS f, GLookupS g) => GLookupS (f :*: g) where
-  gtoAccessorTreeS (x :*: y) get set = tf ++ tg
+  gtoAccessorTreeS (x0 :*: y0) get set = tf ++ tg
     where
-      tf = gtoAccessorTreeS x (getLeft  . get) (set . setLeft)
-      tg = gtoAccessorTreeS y (getRight . get) (set . setRight)
+      tf = gtoAccessorTreeS x0 (getLeft  . get) setLeft
+      tg = gtoAccessorTreeS y0 (getRight . get) setRight
 
-      getLeft  (x' :*: _ ) = x'
-      getRight (_  :*: y') = y'
+      getLeft  (x :*: _) = x
+      getRight (_ :*: y) = y
 
-      setLeft  x' = x' :*: y
-      setRight y' = x  :*: y'
+      setLeft  x new = set (x :*: getRight (get new)) new
+      setRight y new = set (getLeft (get new) :*: y) new
 
 instance (Datatype d, Constructor c, GLookupS a) => GLookup (D1 d (C1 c a)) where
   gtoAccessorTree d@(M1 c) get set = Data (datatypeName d, conName c) con
