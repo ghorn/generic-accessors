@@ -10,3 +10,8 @@
 0.3
 ---
 * Fix setters
+
+0.4
+---
+* Revive convenience show functions
+* Ints and Bools are no longer shown as floats

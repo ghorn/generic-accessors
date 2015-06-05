@@ -306,35 +306,42 @@ instance Lookup a => Lookup (V3T f a) where
   toAccessorTree x get set = toAccessorTree (unV x) (unV . get) (set . V3T)
 instance Lookup a => Lookup (Euler a)
 
-showAccTrees :: (Getter a -> String) -> [(String, AccessorTree a)] -> String -> [String]
-showAccTrees show' trees spaces = concat cs ++ [spaces ++ "}"]
+showAccTrees :: (Double -> String) -> a -> [(String, AccessorTree a)] -> String -> [String]
+showAccTrees show' x trees spaces = concat cs ++ [spaces ++ "}"]
   where
-    cs = zipWith (showRecordField show' spaces) trees ("{ " : repeat ", ")
+    cs = zipWith (showRecordField show' x spaces) trees ("{ " : repeat ", ")
 
-showRecordField :: (Getter a -> String) -> String -> (String, AccessorTree a) -> String -> [String]
-showRecordField show' spaces (getterName, ATGetter (get, _)) prefix =
-  [spaces ++ prefix ++ getterName ++ " = " ++ show' get]
-showRecordField show' spaces (getterName, Data (_,cons) trees) prefix =
-  (spaces ++ prefixNameEq ++ cons) : showAccTrees show' trees newSpaces
+showVal :: Getter a -> (Double -> String) -> a -> String
+showVal (GetBool get) _ x = show (get x)
+showVal (GetInt get) _ x = show (get x)
+showVal (GetDouble get) show' x = show' (get x)
+showVal (GetFloat get) show' x = show' (realToFrac (get x))
+showVal GetSorry _ _ = ""
+
+showRecordField :: (Double -> String) -> a -> String -> (String, AccessorTree a) -> String -> [String]
+showRecordField show' x spaces (getterName, ATGetter (get, _)) prefix =
+  [spaces ++ prefix ++ getterName ++ " = " ++ showVal get show' x]
+showRecordField show' x spaces (getterName, Data (_,cons) trees) prefix =
+  (spaces ++ prefixNameEq ++ cons) : showAccTrees show' x trees newSpaces
   where
     prefixNameEq = prefix ++ getterName ++ " = "
     newSpaces = spaces ++ (replicate (length prefixNameEq) ' ')
 
 -- | Show a tree of values
-showTree :: AccessorTree a -> (Getter a -> String) -> String
-showTree (Data (_,cons) trees) show' = init $ unlines $ cons : showAccTrees show' trees ""
-showTree (ATGetter (get,_)) show' = show' get
+showTree :: AccessorTree a -> (Double -> String) -> a -> String
+showTree (Data (_,cons) trees) show' x = init $ unlines $ cons : showAccTrees show' x trees ""
+showTree (ATGetter (get,_)) show' x = showVal get show' x
 
 -- | Show a list of values
 -- .
 -- True --> align the colums, False --> total mayhem
-showFlat :: forall a . AccessorTree a -> Bool -> (Getter a -> String) -> String
-showFlat at align show' = init $ unlines $ map f fl
+showFlat :: forall a . AccessorTree a -> Bool -> (Double -> String) -> a -> String
+showFlat at align show' x = init $ unlines $ map f fl
   where
     fst3 (z,_,_) = z
     n = maximum (map (length . fst3) fl)
 
-    f (name, get, _) = name ++ spaces ++ " = " ++ show' get
+    f (name, get, _) = name ++ spaces ++ " = " ++ showVal get show' x
       where
         spaces
           | align = replicate (n - length name) ' '

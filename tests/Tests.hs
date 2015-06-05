@@ -39,6 +39,8 @@ data Xyz a = Xyz { xx :: Int
 data One = MkOne { one :: Double } deriving (Generic)
 data Foo = MkFoo { aaa :: Int
                  , bbb :: Xyz Int
+                 , lol :: Bool
+                 , notlol :: Bool
                  , yoyo :: Xyz (Xyz Double)
                  , ccc :: One
                  } deriving (Generic)
@@ -50,7 +52,7 @@ yo :: Xyz (Xyz Double)
 yo = Xyz 42 45 2000 (Xyz 2 3 4 5)
 
 foo :: Foo
-foo = MkFoo 2 (Xyz 6 7 8 9) yo (MkOne 17)
+foo = MkFoo 2 (Xyz 6 7 8 9) True False yo (MkOne 17)
 
 yup :: AccessorTree Foo
 yup = accessors foo
@@ -78,19 +80,21 @@ treeTest = assertEqualString x y
   where
     x = init $ unlines
         [ "MkFoo"
-        , "{ aaa = 2.00e0"
+        , "{ aaa = 2"
         , ", bbb = Xyz"
-        , "        { xx = 6.00e0"
+        , "        { xx = 6"
         , "        , yy = 7.00e0"
         , "        , zz = 8.00e0"
-        , "        , ww = 9.00e0"
+        , "        , ww = 9"
         , "        }"
+        , ", lol = True"
+        , ", notlol = False"
         , ", yoyo = Xyz"
-        , "         { xx = 4.20e1"
+        , "         { xx = 42"
         , "         , yy = 4.50e1"
         , "         , zz = 2.00e3"
         , "         , ww = Xyz"
-        , "                { xx = 2.00e0"
+        , "                { xx = 2"
         , "                , yy = 3.00e0"
         , "                , zz = 4.00e0"
         , "                , ww = 5.00e0"
@@ -107,15 +111,17 @@ flatTest :: HUnit.Assertion
 flatTest = assertEqualString x y
   where
     x = init $ unlines
-        [ "aaa = 2.00e0"
-        , "bbb.xx = 6.00e0"
+        [ "aaa = 2"
+        , "bbb.xx = 6"
         , "bbb.yy = 7.00e0"
         , "bbb.zz = 8.00e0"
-        , "bbb.ww = 9.00e0"
-        , "yoyo.xx = 4.20e1"
+        , "bbb.ww = 9"
+        , "lol = True"
+        , "notlol = False"
+        , "yoyo.xx = 42"
         , "yoyo.yy = 4.50e1"
         , "yoyo.zz = 2.00e3"
-        , "yoyo.ww.xx = 2.00e0"
+        , "yoyo.ww.xx = 2"
         , "yoyo.ww.yy = 3.00e0"
         , "yoyo.ww.zz = 4.00e0"
         , "yoyo.ww.ww = 5.00e0"
@@ -127,15 +133,17 @@ flatTestAligned :: HUnit.Assertion
 flatTestAligned = assertEqualString x y
   where
     x = init $ unlines
-        [ "aaa        = 2.00e0"
-        , "bbb.xx     = 6.00e0"
+        [ "aaa        = 2"
+        , "bbb.xx     = 6"
         , "bbb.yy     = 7.00e0"
         , "bbb.zz     = 8.00e0"
-        , "bbb.ww     = 9.00e0"
-        , "yoyo.xx    = 4.20e1"
+        , "bbb.ww     = 9"
+        , "lol        = True"
+        , "notlol     = False"
+        , "yoyo.xx    = 42"
         , "yoyo.yy    = 4.50e1"
         , "yoyo.zz    = 2.00e3"
-        , "yoyo.ww.xx = 2.00e0"
+        , "yoyo.ww.xx = 2"
         , "yoyo.ww.yy = 3.00e0"
         , "yoyo.ww.zz = 4.00e0"
         , "yoyo.ww.ww = 5.00e0"
