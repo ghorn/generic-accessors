@@ -15,3 +15,7 @@
 ---
 * Revive convenience show functions
 * Ints and Bools are no longer shown as floats
+
+0.4.1
+---
+* add version of flatten which returns name as [String]

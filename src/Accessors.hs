@@ -13,6 +13,7 @@ module Accessors
        , Getter(..)
        , accessors
        , flatten
+       , flatten'
        , showTree
        , showFlat
        ) where
@@ -66,13 +67,18 @@ showMsgs :: [String] -> String
 showMsgs = intercalate "."
 
 flatten :: AccessorTree a -> [(String, Getter a, Setter a)]
-flatten = flatten' []
-
-flatten' :: [String] -> AccessorTree a -> [(String, Getter a, Setter a)]
-flatten' msgs (ATGetter (get, set)) = [(showMsgs (reverse msgs), get, set)]
-flatten' msgs (Data (_,_) trees) = concatMap f trees
+flatten = map f . flatten'
   where
-    f (name,tree) = flatten' (name:msgs) tree
+    f (x,y,z) = (showMsgs x, y, z)
+
+flatten' :: AccessorTree a -> [([String], Getter a, Setter a)]
+flatten' = flattenChain []
+  where
+    flattenChain :: [String] -> AccessorTree a -> [([String], Getter a, Setter a)]
+    flattenChain msgs (ATGetter (get, set)) = [(reverse msgs, get, set)]
+    flattenChain msgs (Data (_,_) trees) = concatMap f trees
+      where
+        f (name,tree) = flattenChain (name:msgs) tree
 
 -- | Things which you can make a tree of labeled getters for.
 -- You should derive this using GHC.Generics.
