@@ -1,5 +1,5 @@
 name:                generic-accessors
-version:             0.4.1
+version:             0.4.1.1
 synopsis:            stringly-named getters for generic data
 license:             BSD3
 license-file:        LICENSE

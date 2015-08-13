@@ -333,16 +333,21 @@ showRecordField show' x spaces (getterName, Data (_,cons) trees) prefix =
     prefixNameEq = prefix ++ getterName ++ " = "
     newSpaces = spaces ++ (replicate (length prefixNameEq) ' ')
 
+-- version of (init . unlines) which doesn't throw an error on empty input
+initUnlines :: [String] -> [Char]
+initUnlines [] = ""
+initUnlines xs = init (unlines xs)
+
 -- | Show a tree of values
 showTree :: AccessorTree a -> (Double -> String) -> a -> String
-showTree (Data (_,cons) trees) show' x = init $ unlines $ cons : showAccTrees show' x trees ""
+showTree (Data (_,cons) trees) show' x = initUnlines $ cons : showAccTrees show' x trees ""
 showTree (ATGetter (get,_)) show' x = showVal get show' x
 
 -- | Show a list of values
 -- .
 -- True --> align the colums, False --> total mayhem
 showFlat :: forall a . AccessorTree a -> Bool -> (Double -> String) -> a -> String
-showFlat at align show' x = init $ unlines $ map f fl
+showFlat at align show' x = initUnlines $ map f fl
   where
     fst3 (z,_,_) = z
     n = maximum (map (length . fst3) fl)
