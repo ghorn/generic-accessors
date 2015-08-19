@@ -50,6 +50,7 @@ data Getter a =
   | GetDouble (a -> Double)
   | GetFloat (a -> Float)
   | GetInt (a -> Int)
+  | GetString (a -> String)
   | GetSorry -- ^ not yet implemented
 
 data Setter a =
@@ -57,6 +58,7 @@ data Setter a =
   | SetDouble (Double -> a -> a)
   | SetFloat (Float -> a -> a)
   | SetInt (Int -> a -> a)
+  | SetString (String -> a -> a)
   | SetSorry -- ^ not yet implemented
 
 accessors :: Lookup a => a -> AccessorTree a
@@ -229,6 +231,8 @@ instance Lookup Double where
   toAccessorTree _ get set = ATGetter (GetDouble get, SetDouble set)
 instance Lookup Bool where
   toAccessorTree _ get set = ATGetter (GetBool get, SetBool set)
+instance Lookup String where
+  toAccessorTree _ get set = ATGetter (GetString get, SetString set)
 
 -- Word types
 instance Lookup Word where
@@ -322,6 +326,7 @@ showVal (GetBool get) _ x = show (get x)
 showVal (GetInt get) _ x = show (get x)
 showVal (GetDouble get) show' x = show' (get x)
 showVal (GetFloat get) show' x = show' (realToFrac (get x))
+showVal (GetString get) _ x = get x
 showVal GetSorry _ _ = ""
 
 showRecordField :: (Double -> String) -> a -> String -> (String, AccessorTree a) -> String -> [String]
