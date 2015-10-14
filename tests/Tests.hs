@@ -55,7 +55,7 @@ foo :: Foo
 foo = MkFoo 2 (Xyz 6 7 8 9) True False yo (MkOne 17)
 
 yup :: AccessorTree Foo
-yup = accessors foo
+yup = accessors
 
 
 accessorTests :: Test
