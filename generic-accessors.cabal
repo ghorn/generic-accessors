@@ -18,6 +18,10 @@ description: {
 Get a Tree or list of (String, a -> Double) pairs for use in plotting and data inspection
 }
 
+source-repository head
+  type:     git
+  location: git://github.com/ghorn/generic-accessors.git
+
 library
   hs-source-dirs:    src
   default-language:  Haskell2010
