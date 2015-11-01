@@ -11,6 +11,7 @@ module Accessors
        , AccessorTree(..)
        , Field(..)
        , accessors
+       , describeField
        , flatten
        , flatten'
        , showTree
@@ -51,7 +52,16 @@ data Field a =
   | FloatField (Lens' a Float)
   | IntField (Lens' a Int)
   | StringField (Lens' a String)
-  | SorryField -- ^ not yet implemented
+  | SorryField -- ^ a field which is not yet supported
+
+-- | Return the type of field, such as "Bool", "Double", "String", etc.
+describeField :: Field a -> String
+describeField (BoolField _) = "Bool"
+describeField (DoubleField _) = "Double"
+describeField (FloatField _) = "Float"
+describeField (IntField _) = "Int"
+describeField (StringField _) = "String"
+describeField SorryField = "Sorry"
 
 accessors :: Lookup a => AccessorTree a
 accessors = toAccessorTree id
