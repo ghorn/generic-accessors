@@ -47,21 +47,21 @@ data AccessorTree a = Data (String,String) [(String, AccessorTree a)]
                     | Field (Field a)
 
 data Field a =
-  BoolField (Lens' a Bool)
-  | DoubleField (Lens' a Double)
-  | FloatField (Lens' a Float)
-  | IntField (Lens' a Int)
-  | StringField (Lens' a String)
-  | SorryField -- ^ a field which is not yet supported
+  FieldBool (Lens' a Bool)
+  | FieldDouble (Lens' a Double)
+  | FieldFloat (Lens' a Float)
+  | FieldInt (Lens' a Int)
+  | FieldString (Lens' a String)
+  | FieldSorry -- ^ a field which is not yet supported
 
 -- | Return the type of field, such as "Bool", "Double", "String", etc.
 describeField :: Field a -> String
-describeField (BoolField _) = "Bool"
-describeField (DoubleField _) = "Double"
-describeField (FloatField _) = "Float"
-describeField (IntField _) = "Int"
-describeField (StringField _) = "String"
-describeField SorryField = "Sorry"
+describeField (FieldBool _) = "Bool"
+describeField (FieldDouble _) = "Double"
+describeField (FieldFloat _) = "Float"
+describeField (FieldInt _) = "Int"
+describeField (FieldString _) = "String"
+describeField FieldSorry = "Sorry"
 
 accessors :: Lookup a => AccessorTree a
 accessors = toAccessorTree id
@@ -190,100 +190,100 @@ instance Lookup a => Lookup (Linear.Quaternion a) where
 
 -- basic types
 instance Lookup () where -- hack to get dummy tree
-  toAccessorTree _ = Field SorryField
+  toAccessorTree _ = Field FieldSorry
 instance Lookup Int where
-  toAccessorTree lens = Field (IntField lens)
+  toAccessorTree lens = Field (FieldInt lens)
 instance Lookup Float where
-  toAccessorTree lens = Field (FloatField lens)
+  toAccessorTree lens = Field (FieldFloat lens)
 instance Lookup Double where
-  toAccessorTree lens = Field (DoubleField lens)
+  toAccessorTree lens = Field (FieldDouble lens)
 instance Lookup Bool where
-  toAccessorTree lens = Field (BoolField lens)
+  toAccessorTree lens = Field (FieldBool lens)
 instance Lookup String where
-  toAccessorTree lens = Field (StringField lens)
+  toAccessorTree lens = Field (FieldString lens)
 
 -- Word types
 instance Lookup Word where
-  toAccessorTree lens0 = Field (IntField (lens0 . integralLens))
+  toAccessorTree lens0 = Field (FieldInt (lens0 . integralLens))
 instance Lookup Word8 where
-  toAccessorTree lens0 = Field (IntField (lens0 . integralLens))
+  toAccessorTree lens0 = Field (FieldInt (lens0 . integralLens))
 instance Lookup Word16 where
-  toAccessorTree lens0 = Field (IntField (lens0 . integralLens))
+  toAccessorTree lens0 = Field (FieldInt (lens0 . integralLens))
 instance Lookup Word32 where
-  toAccessorTree lens0 = Field (IntField (lens0 . integralLens))
+  toAccessorTree lens0 = Field (FieldInt (lens0 . integralLens))
 instance Lookup Word64 where
-  toAccessorTree lens0 = Field (IntField (lens0 . integralLens))
+  toAccessorTree lens0 = Field (FieldInt (lens0 . integralLens))
 
 -- Int types
 instance Lookup Int8 where
-  toAccessorTree lens0 = Field (IntField (lens0 . integralLens))
+  toAccessorTree lens0 = Field (FieldInt (lens0 . integralLens))
 instance Lookup Int16 where
-  toAccessorTree lens0 = Field (IntField (lens0 . integralLens))
+  toAccessorTree lens0 = Field (FieldInt (lens0 . integralLens))
 instance Lookup Int32 where
-  toAccessorTree lens0 = Field (IntField (lens0 . integralLens))
+  toAccessorTree lens0 = Field (FieldInt (lens0 . integralLens))
 instance Lookup Int64 where
-  toAccessorTree lens0 = Field (IntField (lens0 . integralLens))
+  toAccessorTree lens0 = Field (FieldInt (lens0 . integralLens))
 
 -- C types
 -- todo(greg): some of these have inappropriate fields
 instance Lookup CChar where
-  toAccessorTree lens0 = Field (IntField (lens0 . integralLens))
+  toAccessorTree lens0 = Field (FieldInt (lens0 . integralLens))
 instance Lookup CSChar where
-  toAccessorTree lens0 = Field (IntField (lens0 . integralLens))
+  toAccessorTree lens0 = Field (FieldInt (lens0 . integralLens))
 instance Lookup CUChar where
-  toAccessorTree lens0 = Field (IntField (lens0 . integralLens))
+  toAccessorTree lens0 = Field (FieldInt (lens0 . integralLens))
 instance Lookup CShort where
-  toAccessorTree lens0 = Field (IntField (lens0 . integralLens))
+  toAccessorTree lens0 = Field (FieldInt (lens0 . integralLens))
 instance Lookup CUShort where
-  toAccessorTree lens0 = Field (IntField (lens0 . integralLens))
+  toAccessorTree lens0 = Field (FieldInt (lens0 . integralLens))
 instance Lookup CInt where
-  toAccessorTree lens0 = Field (IntField (lens0 . integralLens))
+  toAccessorTree lens0 = Field (FieldInt (lens0 . integralLens))
 instance Lookup CUInt where
-  toAccessorTree lens0 = Field (IntField (lens0 . integralLens))
+  toAccessorTree lens0 = Field (FieldInt (lens0 . integralLens))
 instance Lookup CLong where
-  toAccessorTree lens0 = Field (IntField (lens0 . integralLens))
+  toAccessorTree lens0 = Field (FieldInt (lens0 . integralLens))
 instance Lookup CULong where
-  toAccessorTree lens0 = Field (IntField (lens0 . integralLens))
+  toAccessorTree lens0 = Field (FieldInt (lens0 . integralLens))
 instance Lookup CPtrdiff where
-  toAccessorTree lens0 = Field (IntField (lens0 . integralLens))
+  toAccessorTree lens0 = Field (FieldInt (lens0 . integralLens))
 instance Lookup CSize where
-  toAccessorTree lens0 = Field (IntField (lens0 . integralLens))
+  toAccessorTree lens0 = Field (FieldInt (lens0 . integralLens))
 instance Lookup CWchar where
-  toAccessorTree lens0 = Field (IntField (lens0 . integralLens))
+  toAccessorTree lens0 = Field (FieldInt (lens0 . integralLens))
 instance Lookup CSigAtomic where
-  toAccessorTree lens0 = Field (IntField (lens0 . integralLens))
+  toAccessorTree lens0 = Field (FieldInt (lens0 . integralLens))
 instance Lookup CLLong where
-  toAccessorTree lens0 = Field (IntField (lens0 . integralLens))
+  toAccessorTree lens0 = Field (FieldInt (lens0 . integralLens))
 instance Lookup CULLong where
-  toAccessorTree lens0 = Field (IntField (lens0 . integralLens))
+  toAccessorTree lens0 = Field (FieldInt (lens0 . integralLens))
 instance Lookup CIntPtr where
-  toAccessorTree lens0 = Field (IntField (lens0 . integralLens))
+  toAccessorTree lens0 = Field (FieldInt (lens0 . integralLens))
 instance Lookup CUIntPtr where
-  toAccessorTree lens0 = Field (IntField (lens0 . integralLens))
+  toAccessorTree lens0 = Field (FieldInt (lens0 . integralLens))
 instance Lookup CIntMax where
-  toAccessorTree lens0 = Field (IntField (lens0 . integralLens))
+  toAccessorTree lens0 = Field (FieldInt (lens0 . integralLens))
 instance Lookup CUIntMax where
-  toAccessorTree lens0 = Field (IntField (lens0 . integralLens))
+  toAccessorTree lens0 = Field (FieldInt (lens0 . integralLens))
 instance Lookup CClock where
-  toAccessorTree lens0 = Field (IntField (lens0 . clockLens))
+  toAccessorTree lens0 = Field (FieldInt (lens0 . clockLens))
     where
       clockLens f (CClock x) = fmap (CClock . fromIntegral) (f (fromIntegral x))
 instance Lookup CTime where
-  toAccessorTree lens0 = Field (IntField (lens0 . timeLens))
+  toAccessorTree lens0 = Field (FieldInt (lens0 . timeLens))
     where
       timeLens f (CTime x) = fmap (CTime . fromIntegral) (f (fromIntegral x))
 instance Lookup CUSeconds where
-  toAccessorTree lens0 = Field (IntField (lens0 . usecondsLens))
+  toAccessorTree lens0 = Field (FieldInt (lens0 . usecondsLens))
     where
       usecondsLens f (CUSeconds x) = fmap (CUSeconds . fromIntegral) (f (fromIntegral x))
 instance Lookup CSUSeconds where
-  toAccessorTree lens0 = Field (IntField (lens0 . susecondsLens))
+  toAccessorTree lens0 = Field (FieldInt (lens0 . susecondsLens))
     where
       susecondsLens f (CSUSeconds x) = fmap (CSUSeconds . fromIntegral) (f (fromIntegral x))
 instance Lookup CFloat where
-  toAccessorTree lens0 = Field (DoubleField (lens0 . realFracLens))
+  toAccessorTree lens0 = Field (FieldDouble (lens0 . realFracLens))
 instance Lookup CDouble where
-  toAccessorTree lens0 = Field (DoubleField (lens0 . realFracLens))
+  toAccessorTree lens0 = Field (FieldDouble (lens0 . realFracLens))
 
 {-# INLINE integralLens #-}
 integralLens :: Integral a => Lens' a Int
@@ -306,12 +306,12 @@ showAccTrees show' x trees spaces = concat cs ++ [spaces ++ "}"]
     cs = zipWith (showRecordField show' x spaces) trees ("{ " : repeat ", ")
 
 showVal :: Field a -> (Double -> String) -> a -> String
-showVal (BoolField lens) _ x = show (x ^. lens)
-showVal (IntField lens) _ x = show (x ^. lens)
-showVal (DoubleField lens) show' x = show' (x ^. lens)
-showVal (FloatField lens) show' x = show' (realToFrac (x ^. lens))
-showVal (StringField lens) _ x = x ^. lens
-showVal SorryField _ _ = ""
+showVal (FieldBool lens) _ x = show (x ^. lens)
+showVal (FieldInt lens) _ x = show (x ^. lens)
+showVal (FieldDouble lens) show' x = show' (x ^. lens)
+showVal (FieldFloat lens) show' x = show' (realToFrac (x ^. lens))
+showVal (FieldString lens) _ x = x ^. lens
+showVal FieldSorry _ _ = ""
 
 showRecordField :: (Double -> String) -> a -> String -> (String, AccessorTree a) -> String -> [String]
 showRecordField show' x spaces (getterName, (Field field)) prefix =
