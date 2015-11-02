@@ -1,27 +1,27 @@
-0.1
+0.5.0.0
 ---
-* Initial release (moved from Plot-ho-matic repo)
+* Use lenses intead of hand-rolled Getter/Setters
+* add describeField function
+* add sameFieldType function
 
-0.2 (broken, do not use)
+0.4.1
 ---
-* Add setters
-* Make getters support more types than Double
-
-0.3
----
-* Fix setters
+* add version of flatten which returns name as [String]
 
 0.4
 ---
 * Revive convenience show functions
 * Ints and Bools are no longer shown as floats
 
-0.4.1
+0.3
 ---
-* add version of flatten which returns name as [String]
+* Fix setters
 
-0.5.0.0
+0.2 (broken, do not use)
 ---
-* Use lenses intead of hand-rolled Getter/Setters
-* add describeField function
-* add sameFieldType function
+* Add setters
+* Make getters support more types than Double
+
+0.1
+---
+* Initial release (moved from Plot-ho-matic repo)
