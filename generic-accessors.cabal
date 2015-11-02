@@ -15,7 +15,7 @@ extra-source-files:
   CHANGELOG.md
   README.md
 description: {
-Get a Tree or list of (String, a -> Double) pairs for use in plotting and data inspection
+Get a Tree or list of (String, Lens a X) pairs for use in plotting and data inspection
 }
 
 source-repository head

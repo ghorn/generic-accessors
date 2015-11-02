@@ -19,3 +19,9 @@
 0.4.1
 ---
 * add version of flatten which returns name as [String]
+
+0.5.0.0
+---
+* Use lenses intead of hand-rolled Getter/Setters
+* add describeField function
+* add sameFieldType function
