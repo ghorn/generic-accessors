@@ -12,6 +12,7 @@ module Accessors
        , Field(..)
        , accessors
        , describeField
+       , sameFieldType
        , flatten
        , flatten'
        , showTree
@@ -62,6 +63,16 @@ describeField (FieldFloat _) = "Float"
 describeField (FieldInt _) = "Int"
 describeField (FieldString _) = "String"
 describeField FieldSorry = "Sorry"
+
+-- | Returns True if the __type__ of fields is the same.
+sameFieldType :: Field a -> Field b -> Bool
+sameFieldType (FieldBool _) (FieldBool _) = True
+sameFieldType (FieldDouble _) (FieldDouble _) = True
+sameFieldType (FieldFloat _) (FieldFloat _) = True
+sameFieldType (FieldInt _) (FieldInt _) = True
+sameFieldType (FieldString _) (FieldString _) = True
+sameFieldType FieldSorry FieldSorry = True
+sameFieldType _ _ = False
 
 accessors :: Lookup a => AccessorTree a
 accessors = toAccessorTree id
