@@ -162,6 +162,54 @@ instance (Datatype d, Constructor c, GLookupS a)
       m1m1Lens :: Lens' (D1 d (C1 c f) p) (f p)
       m1m1Lens f y = fmap (M1 . M1) (f (unM1 (unM1 y)))
 
+-- tuple instances
+instance (Lookup a, Lookup b) => Lookup (a, b) where
+  toAccessorTree lens0 =
+    Data ("(,)", "(,)")
+    [ ("(x,_)", toAccessorTree (lens0 . lens1))
+    , ("(_,x)", toAccessorTree (lens0 . lens2))
+    ]
+    where
+      lens1 ::  Lens' (a, b) a
+      lens1 f (x, y) = fmap (\x' -> (x', y)) (f x)
+      lens2 :: Lens' (a, b) b
+      lens2 f (x, y) = fmap (\y' -> (x, y')) (f y)
+
+instance (Lookup a, Lookup b, Lookup c) => Lookup (a, b, c) where
+  toAccessorTree lens0 =
+    Data ("(,,)", "(,,)")
+    [ ("(x,_,_)", toAccessorTree (lens0 . lens1))
+    , ("(_,x,_)", toAccessorTree (lens0 . lens2))
+    , ("(_,_,x)", toAccessorTree (lens0 . lens3))
+    ]
+    where
+      lens1 ::  Lens' (a, b, c) a
+      lens1 f (x, y, z) = fmap (\x' -> (x', y, z)) (f x)
+      lens2 :: Lens' (a, b, c) b
+      lens2 f (x, y, z) = fmap (\y' -> (x, y', z)) (f y)
+      lens3 :: Lens' (a, b, c) c
+      lens3 f (x, y, z) = fmap (\z' -> (x, y, z')) (f z)
+
+instance (Lookup a, Lookup b, Lookup c, Lookup d) => Lookup (a, b, c, d) where
+  toAccessorTree lens0 =
+    Data ("(,,,)", "(,,,)")
+    [ ("(x,_,_,_)", toAccessorTree (lens0 . lens1))
+    , ("(_,x,_,_)", toAccessorTree (lens0 . lens2))
+    , ("(_,_,x,_)", toAccessorTree (lens0 . lens3))
+    , ("(_,_,_,x)", toAccessorTree (lens0 . lens4))
+    ]
+    where
+      lens1 ::  Lens' (a, b, c, d) a
+      lens1 f (x, y, z, w) = fmap (\x' -> (x', y, z, w)) (f x)
+      lens2 :: Lens' (a, b, c, d) b
+      lens2 f (x, y, z, w) = fmap (\y' -> (x, y', z, w)) (f y)
+      lens3 :: Lens' (a, b, c, d) c
+      lens3 f (x, y, z, w) = fmap (\z' -> (x, y, z', w)) (f z)
+      lens4 :: Lens' (a, b, c, d) d
+      lens4 f (x, y, z, w) = fmap (\w' -> (x, y, z, w')) (f w)
+
+
+
 -- some instance from linear
 instance Lookup a => Lookup (Linear.V0 a) where
   toAccessorTree _ =

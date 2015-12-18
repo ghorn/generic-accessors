@@ -1,3 +1,7 @@
+0.5.1.0
+---
+* Add tuple instances
+
 0.5.0.0
 ---
 * Use lenses intead of hand-rolled Getter/Setters
