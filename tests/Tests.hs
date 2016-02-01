@@ -13,11 +13,13 @@ import Test.Framework ( Test, testGroup )
 import Test.Framework.Providers.HUnit ( testCase )
 
 import Accessors
+import Accessors.Dynamic
 
 main :: IO ()
 main = do
   defaultMainWithOpts
     [ accessorTests
+    , dynamicTests
     ]
     opts
 
@@ -68,6 +70,14 @@ accessorTests =
   , testCase "showFlat (aligned)" flatTestAligned
   ]
 
+dynamicTests :: Test
+dynamicTests =
+  testGroup "dynamic"
+  [ testCase "toDValue" toDValueTest
+  , testCase "updateDValueTest" updateDValueTest
+  , testCase "badupdateDValueTest" badUpdateDValueTest
+  ]
+
 assertEqualString :: String -> String -> HUnit.Assertion
 assertEqualString x y = HUnit.assertBool msg (x == y)
   where
@@ -76,6 +86,92 @@ assertEqualString x y = HUnit.assertBool msg (x == y)
           "\n------------------ but got: -------------------\n" ++
           y ++
           "\n-----------------------------------------------"
+
+assertEqualString' :: Either String String -> Either String String -> HUnit.Assertion
+assertEqualString' ex ey = HUnit.assertBool msg (ex == ey)
+  where
+    x = case ex of
+      Left r -> r
+      Right r -> r
+    y = case ey of
+      Left r -> r
+      Right r -> r
+    msg = "------------------ expected: ------------------\n" ++
+          x ++
+          "\n------------------ but got: -------------------\n" ++
+          y ++
+          "\n-----------------------------------------------"
+
+toDValueTest :: HUnit.Assertion
+toDValueTest = assertEqualString x y
+  where
+    x = "Right (DData \"Xyz\" (DConstructor \"Xyz\" [(Just \"xx\",Left (DInt 1)),(Just \"yy\",Left (DDouble 2.0)),(Just \"zz\",Left (DFloat 3.0)),(Just \"bb\",Right (DData \"(,,)\" (DConstructor \"(,,)\" [(Just \"(x,_,_)\",Right (DData \"Bool\" (DSum (DSimpleEnum [\"False\",\"True\"] 1)))),(Just \"(_,x,_)\",Right (DData \"Bool\" (DSum (DSimpleEnum [\"False\",\"True\"] 0)))),(Just \"(_,_,x)\",Right (DData \"Bool\" (DSum (DSimpleEnum [\"False\",\"True\"] 1))))]))),(Just \"ww\",Right (DData \"One\" (DConstructor \"MkOne\" [(Just \"one\",Left (DDouble 4.0))])))]))"
+
+    y = show (toDData (Xyz 1 2 3 (True, False, True) (MkOne 4)))
+
+updateDValueTest :: HUnit.Assertion
+updateDValueTest = assertEqualString' (fmap show x) (fmap show y)
+  where
+    x0 :: Xyz One
+    x0 = Xyz 1 2 3 (True, False, True) (MkOne 4)
+
+    dvalue =
+      DData "Xyz" $
+      DConstructor "Xyz" $
+      [ (Just "xx", Left (DInt 10))
+      , (Just "yy", Left (DDouble 20.0))
+      , (Just "zz", Left (DFloat 30.0))
+      , ( Just "bb"
+        , Right (DData "(,,)"
+                 (DConstructor "(,,)"
+                  [ (Just "(x,_,_)", Right (DData "Bool" (DSum (DSimpleEnum ["False", "True"] 0))))
+                  , (Just "(_,x,_)", Right (DData "Bool" (DSum (DSimpleEnum ["False", "True"] 1))))
+                  , (Just "(_,_,x)", Right (DData "Bool" (DSum (DSimpleEnum ["False", "True"] 1))))
+                  ]))
+        )
+      , (Just "ww", Right (DData "One"
+                           (DConstructor "MkOne"
+                            [ (Just "one", Left (DDouble 40.0))
+                            ])))
+      ]
+
+    x :: Either String (Xyz One)
+    x = Right $ Xyz 10 20 30 (False, True, True) (MkOne 40)
+
+    y :: Either String (Xyz One)
+    y = updateLookupable x0 (Right dvalue)
+
+badUpdateDValueTest :: HUnit.Assertion
+badUpdateDValueTest = assertEqualString' (fmap show x) (fmap show y)
+  where
+    x0 :: Xyz One
+    x0 = Xyz 1 2 3 (True, False, True) (MkOne 4)
+
+    dvalue =
+      DData "Xyz" $
+      DConstructor "Xyz" $
+      [ (Just "xx", Left (DInt 10))
+      , (Just "yy", Left (DDouble 20.0))
+      , (Just "zz", Left (DFloat 30.0))
+      , ( Just "b"
+        , Right (DData "(,,)"
+                 (DConstructor "(,,)"
+                  [ (Just "(x,_,_)", Right (DData "Bool" (DSum (DSimpleEnum ["False", "True"] 0))))
+                  , (Just "(_,x,_)", Right (DData "Bool" (DSum (DSimpleEnum ["False", "True"] 1))))
+                  , (Just "(_,_,x)", Right (DData "Bool" (DSum (DSimpleEnum ["False", "True"] 1))))
+                  ]))
+        )
+      , (Just "ww", Right (DData "One"
+                           (DConstructor "MkOne"
+                            [ (Just "one", Left (DDouble 40.0))
+                            ])))
+      ]
+
+    x :: Either String (Xyz One)
+    x = Left "accessor selector name Just \"bb\" doesn't match dynamic selector name Just \"b\""
+
+    y :: Either String (Xyz One)
+    y = updateLookupable x0 (Right dvalue)
 
 treeTest :: HUnit.Assertion
 treeTest = assertEqualString x y

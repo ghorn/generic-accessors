@@ -2,6 +2,7 @@ HEAD
 ---
 * Split Datatype/Constructor/Field more cleanly.
 * Add support for Enums with no fields.
+* Add a dynamic representation for dynamic updating.
 
 0.5.1.0
 ---
