@@ -2,6 +2,7 @@
 
 module Accessors
        ( Lookup(..)
+       , AccessorTree
        , GAData(..)
        , GAConstructor(..)
        , GASimpleEnum(..)

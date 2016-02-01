@@ -9,6 +9,7 @@
 
 module Accessors.Accessors
        ( Lookup(..)
+       , AccessorTree
        , GAData(..)
        , GAConstructor(..)
        , GASimpleEnum(..)
