@@ -33,6 +33,8 @@ library
                      , linear
                      , spatial-math >= 0.2.0
                      , lens
+                     , cereal
+                     , binary
 
   ghc-options:      -O2 -Wall
   ghc-prof-options: -O2 -Wall -prof -fprof-auto -fprof-cafs -rtsopts

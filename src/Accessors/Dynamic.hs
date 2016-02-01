@@ -10,6 +10,8 @@ module Accessors.Dynamic
 
 import GHC.Generics
 
+import Data.Binary ( Binary )
+import Data.Serialize ( Serialize )
 import Data.Data ( Data )
 import Data.List ( intercalate )
 import Data.Typeable ( Typeable )
@@ -19,13 +21,19 @@ import Accessors
 
 data DData = DData String DConstructor
            deriving (Generic, Show, Eq, Ord, Data, Typeable)
+instance Serialize DData
+instance Binary DData
 
 data DSimpleEnum = DSimpleEnum [String] Int
                  deriving (Generic, Show, Eq, Ord, Data, Typeable)
+instance Serialize DSimpleEnum
+instance Binary DSimpleEnum
 
 data DConstructor = DConstructor String [(Maybe String, Either DField DData)]
                   | DSum  DSimpleEnum
                   deriving (Generic, Show, Eq, Ord, Data, Typeable)
+instance Serialize DConstructor
+instance Binary DConstructor
 
 -- | a dynamic field
 data DField =
@@ -36,7 +44,8 @@ data DField =
   | DString String
   | DSorry
   deriving (Generic, Show, Eq, Ord, Data, Typeable)
-
+instance Serialize DField
+instance Binary DField
 
 describeDField :: DField -> String
 describeDField (DBool _) = "Bool"
