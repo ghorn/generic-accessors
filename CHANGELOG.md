@@ -1,3 +1,7 @@
+HEAD
+---
+* Split Datatype/Constructor/Field more cleanly.
+
 0.5.1.0
 ---
 * Add tuple instances

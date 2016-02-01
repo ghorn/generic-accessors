@@ -35,15 +35,16 @@ data Xyz a = Xyz { xx :: Int
                  , yy :: Double
                  , zz :: Float
                  , ww :: a
-                 } deriving (Generic)
-data One = MkOne { one :: Double } deriving (Generic)
+                 } deriving (Generic, Show)
+data One = MkOne { one :: Double
+                 } deriving (Generic, Show)
 data Foo = MkFoo { aaa :: Int
                  , bbb :: Xyz Int
                  , lol :: Bool
                  , notlol :: Bool
                  , yoyo :: Xyz (Xyz Double)
                  , ccc :: One
-                 } deriving (Generic)
+                 } deriving (Generic, Show)
 instance Lookup One
 instance Lookup a => Lookup (Xyz a)
 instance Lookup Foo
@@ -54,7 +55,7 @@ yo = Xyz 42 45 2000 (Xyz 2 3 4 5)
 foo :: Foo
 foo = MkFoo 2 (Xyz 6 7 8 9) True False yo (MkOne 17)
 
-yup :: AccessorTree Foo
+yup :: Either (GAField Foo) (GAData Foo)
 yup = accessors
 
 
