@@ -1,4 +1,4 @@
-HEAD
+0.6.0.0
 ---
 * Split Datatype/Constructor/Field more cleanly.
 * Add support for Enums with no fields.
