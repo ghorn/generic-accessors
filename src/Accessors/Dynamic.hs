@@ -4,8 +4,8 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 
 module Accessors.Dynamic
-       ( DData(..), DConstructor(..), DSimpleEnum(..), DField(..)
-       , toDData, updateLookupable
+       ( DTree, DData(..), DConstructor(..), DSimpleEnum(..), DField(..)
+       , toDData, updateLookupable, describeDField
        ) where
 
 import GHC.Generics
@@ -19,21 +19,24 @@ import Control.Lens
 
 import Accessors
 
+type DTree = Either DField DData
+
 data DData = DData String DConstructor
            deriving (Generic, Show, Eq, Ord, Data, Typeable)
 instance Serialize DData
 instance Binary DData
 
+data DConstructor =
+  DConstructor String [(Maybe String, DTree)]
+  | DSum DSimpleEnum
+  deriving (Generic, Show, Eq, Ord, Data, Typeable)
+instance Serialize DConstructor
+instance Binary DConstructor
+
 data DSimpleEnum = DSimpleEnum [String] Int
                  deriving (Generic, Show, Eq, Ord, Data, Typeable)
 instance Serialize DSimpleEnum
 instance Binary DSimpleEnum
-
-data DConstructor = DConstructor String [(Maybe String, Either DField DData)]
-                  | DSum  DSimpleEnum
-                  deriving (Generic, Show, Eq, Ord, Data, Typeable)
-instance Serialize DConstructor
-instance Binary DConstructor
 
 -- | a dynamic field
 data DField =
@@ -56,10 +59,10 @@ describeDField (DString _) = "String"
 describeDField DSorry = "Sorry"
 
 -- | convert to a dynamic value
-toDData :: forall a . Lookup a => a -> Either DField DData
+toDData :: forall a . Lookup a => a -> DTree
 toDData x = toDData' accessors
   where
-    toDData' :: Either (GAField a) (GAData a) -> Either DField DData
+    toDData' :: Either (GAField a) (GAData a) -> DTree
     toDData' (Right (GAData dname constructor)) =
       Right $ DData dname (toDConstructor constructor)
     toDData' (Left field) = Left (toDField field)
@@ -80,13 +83,13 @@ toDData x = toDData' accessors
 
 
 -- | Update something using a dynamic representation
-updateLookupable :: Lookup a => a -> Either DField DData -> Either String a
+updateLookupable :: Lookup a => a -> DTree -> Either String a
 updateLookupable x0 dtree = updateData x0 accessors dtree
 
 updateData :: forall a
                      . a
                      -> Either (GAField a) (GAData a)
-                     -> Either DField DData
+                     -> DTree
                      -> Either String a
 updateData x0 (Left afield) (Left dfield) = updateField x0 afield dfield
 updateData x0 (Right (GAData adataName acon)) (Right (DData ddataName dcon))
@@ -130,7 +133,7 @@ updateConstructor x0 (GAConstructor aconName afields) (DConstructor dconName dfi
         
       f :: a
            -> [(Maybe String, Either (GAField a) (GAData a))]
-           -> [(Maybe String, Either DField DData)]
+           -> [(Maybe String, DTree)]
            -> Either String a
       f x ((aname, afield):as) ((dname, dfield):ds)
         | aname /= dname =
