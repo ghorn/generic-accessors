@@ -7,6 +7,7 @@ module Accessors
        , GAConstructor(..)
        , GASimpleEnum(..)
        , GAField(..)
+       , GATip(..)
        , accessors
        , describeGAField
        , sameFieldType
