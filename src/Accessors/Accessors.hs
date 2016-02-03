@@ -26,7 +26,7 @@ module Accessors.Accessors
 
 import GHC.Generics
 
-import Control.Lens ( Lens', Prism', (^.), preview, prism, withPrism )
+import Control.Lens ( Lens', Prism', (^.), (.~), preview, prism, withPrism )
 import Data.List ( intercalate )
 import Text.Printf ( printf )
 
@@ -38,7 +38,14 @@ data GAConstructor a =
   GAConstructor String [(Maybe String, AccessorTree a)]
   | GASum (GASimpleEnum a)
 
-data GASimpleEnum a = GASimpleEnum [String] (Lens' a Int)
+data GASimpleEnum a =
+  GASimpleEnum
+  { eConstructors :: [String]
+  , eToString :: a -> String
+  , eToIndex :: a -> Int
+  , eFromString :: a -> String -> Either String a
+  , eFromIndex :: a -> Int -> Either String a
+  }
 
 data GAField a =
   FieldDouble (Lens' a Double)
@@ -57,7 +64,7 @@ showGAData spaces (GAData name constructors) =
   showGAConstructor (spaces ++ "    ") constructors
 
 showGAConstructor :: String -> GAConstructor a -> [String]
-showGAConstructor spaces (GASum (GASimpleEnum names _)) = [spaces ++ "[" ++ intercalate ", " names ++ "]"]
+showGAConstructor spaces (GASum e) = [spaces ++ "[" ++ intercalate ", " (eConstructors e) ++ "]"]
 showGAConstructor spaces (GAConstructor name fields) =
   (spaces ++ name) : concatMap (showGAField (spaces ++ "    ")) fields
 
@@ -96,7 +103,7 @@ sameFieldType (FieldString _) _ = False
 sameFieldType FieldSorry _ = False
 
 accessors :: Lookup a => AccessorTree a
-accessors = toGAData id
+accessors = toAccessorTree id
 
 showMsgs :: [Maybe String] -> String
 showMsgs = intercalate "." . map showMName
@@ -120,23 +127,23 @@ flatten' = flattenChain []
 -- | Things which you can make a tree of labeled getters for.
 -- You should derive this using GHC.Generics.
 class Lookup a where
-  toGAData :: Lens' b a -> AccessorTree b
+  toAccessorTree :: Lens' b a -> AccessorTree b
 
-  default toGAData :: (Generic a, GLookup (Rep a)) => Lens' b a -> AccessorTree b
-  toGAData lens0 = gtoGAData (lens0 . repLens)
+  default toAccessorTree :: (Generic a, GLookup (Rep a)) => Lens' b a -> AccessorTree b
+  toAccessorTree lens0 = gtoAccessorTree (lens0 . repLens)
     where
       repLens :: Lens' a (Rep a p)
       repLens f y = fmap to (f (from y))
 
 class GLookup f where
-  gtoGAData :: Lens' b (f a) -> AccessorTree b
+  gtoAccessorTree :: Lens' b (f a) -> AccessorTree b
 
 class GLookupS f where
-  gtoGADataS :: Lens' b (f a) -> [(Maybe String, AccessorTree b)]
+  gtoAccessorTreeS :: Lens' b (f a) -> [(Maybe String, AccessorTree b)]
 
 instance Lookup f => GLookup (Rec0 f) where
-  gtoGAData :: Lens' b (Rec0 f p) -> AccessorTree b
-  gtoGAData lens0 = toGAData (lens0 . rec0Lens)
+  gtoAccessorTree :: Lens' b (Rec0 f p) -> AccessorTree b
+  gtoAccessorTree lens0 = toAccessorTree (lens0 . rec0Lens)
     where
       rec0Lens :: Lens' (Rec0 f a) f
       rec0Lens f y = fmap K1 (f (unK1 y))
@@ -182,32 +189,76 @@ instance (GEnum c1, GEnum c2) => GEnum (c1 :+: c2) where
           reviewer (R1 l) = Right l
           reviewer x = Left x
 
-instance (Datatype d, GEnum (c1 :+: c2), GEnum c1, GEnum c2) => GLookup (D1 d (c1 :+: c2)) where
-  gtoGAData :: forall b p . Lens' b (D1 d (c1 :+: c2) p) -> AccessorTree b
-  gtoGAData lens0 = Right $ GAData (datatypeName datatypeError) constructor
+instance (Datatype d, GEnum (c1 :+: c2)) => GLookup (D1 d (c1 :+: c2)) where
+  gtoAccessorTree :: forall b p . Lens' b (D1 d (c1 :+: c2) p) -> AccessorTree b
+  gtoAccessorTree lens0 = Right $ GAData (datatypeName datatypeError) constructor
     where
       datatypeError :: D1 d (c1 :+: c2) p
       datatypeError = error $ "generic-accessors: datatypeName should never access data"
 
       constructor :: GAConstructor b
-      constructor = GASum $ GASimpleEnum (map fst3 simpleEnums) (lens0 . m1Lens . intLens)
+      constructor =
+        GASum
+        GASimpleEnum
+        { eConstructors = options
+        , eToString = toString
+        , eToIndex = toIndex
+        , eFromIndex = fromIndex
+        , eFromString = fromString
+        }
         where
-          fst3 (x,_,_) = x
+          options = map fst3 simpleEnums
+            where
+              fst3 (x,_,_) = x
+
+          fromIndex x k
+            | k < 0 =
+                Left $
+                printf "generic-accessors: Error converting Int to Enum: requested negative index (%d)" k
+            | k >= length options =
+                Left $
+                "generic-accessors: Error converting Int to Enum.\n" ++
+                printf "Requested index %d but there are only %d options." k (length simpleEnums)
+            | otherwise = Right $ (lens0 . m1Lens . intLens .~ k) x
+
+          fromString x name = fromString' 0 options
+            where
+              fromString' k (opt:opts)
+                | name == opt = fromIndex x k
+                | otherwise = fromString' (k+1) opts
+              fromString' _ [] =
+                Left $
+                "generic-accessors: Error converting from String to Enum: "
+                ++ show name ++ "is not one of the constructors."
+
+          toIndex x = x ^. (lens0 . m1Lens . intLens)
+          toString x = case safeIndex options index of
+            Just r -> r
+            Nothing -> error $ unlines
+                       [ "generic-accessors: eToString: the \"impossible\" happened"
+                       , printf "Enum is out of bounds (index %d, length %d)." index (length options)
+                       ]
+            where
+              index = toIndex x
 
       simpleEnums :: [(String, (c1 :+: c2) p, (c1 :+: c2) p -> Bool)]
       simpleEnums = gtoSimpleEnum id
 
       intLens :: Lens' ((c1 :+: c2) p) Int
-      intLens f y = fmap fromInt (f (toInt y))
+      intLens f y = fmap fromInt' (f (toInt y))
 
-      fromInt :: Int -> (c1 :+: c2) p
+      fromInt' :: Int -> (c1 :+: c2) p
+      fromInt' k = case fromInt k of
+        Right r -> r
+        Left e -> error e
+
+      fromInt :: Int -> Either String ((c1 :+: c2) p)
       fromInt k = case safeIndex simpleEnums k of
-        Nothing -> error $ unlines
-                   [ "generic-accessors:"
-                   , "Error converting Int to Enum."
-                   , printf "Requested index %d but there are only %d options" k (length simpleEnums)
-                   ]
-        Just (_, x, _) -> x
+        Nothing -> Left $
+                   "generic-accessors:\n" ++
+                   "Error converting Int to Enum.\n" ++
+                   printf "Requested index %d but there are only %d options." k (length simpleEnums)
+        Just (_, x, _) -> Right x
 
       toInt :: (c1 :+: c2) p -> Int
       toInt x = toInt' 0 simpleEnums
@@ -222,33 +273,33 @@ instance (Datatype d, GEnum (c1 :+: c2), GEnum c1, GEnum c2) => GLookup (D1 d (c
             , "No enum matched the provided one."
             ]
 
-safeIndex :: [a] -> Int -> Maybe a
-safeIndex (x:_) 0 = Just x
-safeIndex (_:xs) k = safeIndex xs (k-1)
-safeIndex [] _ = Nothing
+      safeIndex :: [a] -> Int -> Maybe a
+      safeIndex (x:_) 0 = Just x
+      safeIndex (_:xs) k = safeIndex xs (k-1)
+      safeIndex [] _ = Nothing
 
 m1Lens :: Lens' (M1 i c f p) (f p)
 m1Lens f y = fmap M1 (f (unM1 y))
 
 instance (Datatype d, Constructor c, GLookupS a) => GLookup (D1 d (C1 c a)) where
-  gtoGAData :: forall b p . Lens' b (D1 d (C1 c a) p) -> AccessorTree b
-  gtoGAData lens0 = Right $ GAData (datatypeName datatypeError) constructor
+  gtoAccessorTree :: forall b p . Lens' b (D1 d (C1 c a) p) -> AccessorTree b
+  gtoAccessorTree lens0 = Right $ GAData (datatypeName datatypeError) constructor
     where
       datatypeError :: D1 d (C1 c a) p
       datatypeError = error $ "generic-accessors: datatypeName should never access data"
 
       constructor :: GAConstructor b
-      constructor = gtoGADataC (lens0 . m1Lens)
+      constructor = gtoAccessorTreeC (lens0 . m1Lens)
 
-gtoGADataC :: forall c b a p . (Constructor c, GLookupS a) => Lens' b (C1 c a p) -> GAConstructor b
-gtoGADataC lens0 = GAConstructor (conName conError) (gtoGADataS (lens0 . m1Lens))
+gtoAccessorTreeC :: forall c b a p . (Constructor c, GLookupS a) => Lens' b (C1 c a p) -> GAConstructor b
+gtoAccessorTreeC lens0 = GAConstructor (conName conError) (gtoAccessorTreeS (lens0 . m1Lens))
   where
     conError :: C1 c a p
     conError = error $ "generic-accessors: conName should never access data"
 
 instance (Selector s, GLookup a) => GLookupS (S1 s a) where
-  gtoGADataS :: Lens' b (S1 s a p) -> [(Maybe String, AccessorTree b)]
-  gtoGADataS lens0 = [(selname, gtoGAData (lens0 . m1Lens))]
+  gtoAccessorTreeS :: Lens' b (S1 s a p) -> [(Maybe String, AccessorTree b)]
+  gtoAccessorTreeS lens0 = [(selname, gtoAccessorTree (lens0 . m1Lens))]
     where
       selname = case selName selError of
         "" -> Nothing
@@ -258,15 +309,15 @@ instance (Selector s, GLookup a) => GLookupS (S1 s a) where
       selError = error $ "generic-accessors: selName should never access data"
 
 instance GLookupS U1 where
-  gtoGADataS :: Lens' b (U1 p) -> [(Maybe String, AccessorTree b)]
-  gtoGADataS _ = []
+  gtoAccessorTreeS :: Lens' b (U1 p) -> [(Maybe String, AccessorTree b)]
+  gtoAccessorTreeS _ = []
 
 instance (GLookupS f, GLookupS g) => GLookupS (f :*: g) where
-  gtoGADataS :: Lens' b ((f :*: g) p) -> [(Maybe String, AccessorTree b)]
-  gtoGADataS lens0 = tf ++ tg
+  gtoAccessorTreeS :: Lens' b ((f :*: g) p) -> [(Maybe String, AccessorTree b)]
+  gtoAccessorTreeS lens0 = tf ++ tg
     where
-      tf = gtoGADataS (lens0 . leftLens)
-      tg = gtoGADataS (lens0 . rightLens)
+      tf = gtoAccessorTreeS (lens0 . leftLens)
+      tg = gtoAccessorTreeS (lens0 . rightLens)
 
       leftLens ::  Lens' ((f :*: g) a) (f a)
       leftLens  f (x :*: y) = fmap (\x' -> x' :*: y ) (f x)
@@ -289,25 +340,15 @@ showFieldVal (FieldFloat lens) show' x = show' (realToFrac (x ^. lens))
 showFieldVal (FieldString lens) _ x = x ^. lens
 showFieldVal FieldSorry _ _ = ""
 
-showSimpleEnum :: a -> GASimpleEnum a -> String
-showSimpleEnum x (GASimpleEnum names intLens) = case safeIndex names index of
-  Just r -> r
-  Nothing -> error $ unlines
-             [ "generic-accessors: showSimpleEnum: the \"impossible\" happened"
-             , printf "Enum is out of bounds (index %d, length %d)." index (length names)
-             ]
-  where
-    index = x ^. intLens
-
 showTipVal :: GATip a -> (Double -> String) -> a -> String
 showTipVal (GATipField f) sh x = showFieldVal f sh x
-showTipVal (GATipSimpleEnum simpleEnum) _ x = showSimpleEnum x simpleEnum
+showTipVal (GATipSimpleEnum simpleEnum) _ x = eToString simpleEnum x
 
 showRecordField :: (Double -> String) -> a -> String -> (Maybe String, AccessorTree a) -> String -> [String]
 showRecordField show' x spaces (getterName, (Left field)) prefix =
   [spaces ++ prefix ++ showMName getterName ++ " = " ++ showFieldVal field show' x]
 showRecordField _ x spaces (getterName, Right (GAData _ (GASum simpleEnum))) prefix =
-  [spaces ++ prefix ++ showMName getterName ++ " = " ++ showSimpleEnum x simpleEnum]
+  [spaces ++ prefix ++ showMName getterName ++ " = " ++ eToString simpleEnum x]
 showRecordField show' x spaces (getterName, Right (GAData _ (GAConstructor cons trees))) prefix =
   (spaces ++ prefixNameEq ++ cons) : showAccTrees show' x trees newSpaces
   where
@@ -321,7 +362,7 @@ initUnlines xs = init (unlines xs)
 
 -- | Show a tree of values
 showTree :: AccessorTree a -> (Double -> String) -> a -> String
-showTree (Right (GAData _ (GASum simpleEnum))) _ x = showSimpleEnum x simpleEnum
+showTree (Right (GAData _ (GASum simpleEnum))) _ x = eToString simpleEnum x
 showTree (Right (GAData _ (GAConstructor cons trees))) show' x =
   initUnlines $ cons : showAccTrees show' x trees ""
 showTree (Left field) show' x = showFieldVal field show' x
