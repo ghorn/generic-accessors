@@ -5,7 +5,9 @@
 
 module Accessors.Dynamic
        ( DTree, DData(..), DConstructor(..), DSimpleEnum(..), DField(..)
-       , toDData, updateLookupable, describeDField
+       , toDData, updateLookupable, describeDField, sameDFieldType
+         -- * some utility functions for working with DSimpleEnums
+       , denumToString, denumToStringOrMsg, denumSetString, denumSetIndex
        ) where
 
 import GHC.Generics
@@ -16,6 +18,7 @@ import Data.Data ( Data )
 import Data.List ( intercalate )
 import Data.Typeable ( Typeable )
 import Control.Lens
+import Text.Printf ( printf )
 
 import Accessors
 
@@ -40,18 +43,65 @@ instance Binary DSimpleEnum
 
 -- | a dynamic field
 data DField =
-  DBool Bool
-  | DInt Int
-  | DDouble Double
+  DDouble Double
   | DFloat Float
+  | DInt Int
   | DString String
   | DSorry
   deriving (Generic, Show, Eq, Ord, Data, Typeable)
 instance Serialize DField
 instance Binary DField
 
+-- | Get the constructor string or an error message.
+denumToString :: DSimpleEnum -> Either String String
+denumToString (DSimpleEnum _ k)
+  | k < 0 = Left $ printf "denumToString: index %d is negative" k
+denumToString (DSimpleEnum constructors k) = safeIndex constructors k
+  where
+    safeIndex (x:_) 0 = Right x
+    safeIndex (_:xs) j = safeIndex xs (j-1)
+    safeIndex [] _ =
+      Left $
+      printf "denumToString: index %d is too large (%d constructors)" k (length constructors)
+
+-- | Get the constructor string or an error message without telling which is which.
+denumToStringOrMsg :: DSimpleEnum -> String
+denumToStringOrMsg d = case denumToString d of
+  Left msg -> msg
+  Right r -> r
+
+-- | Try to update an enum with its constructor. Fail if not a valid constructor.
+denumSetString :: DSimpleEnum -> String -> Either String DSimpleEnum
+denumSetString (DSimpleEnum options _) txt = safeLookup options 0
+  where
+    safeLookup (opt:opts) k
+      | opt == txt = Right (DSimpleEnum options k)
+      | otherwise = safeLookup opts (k + 1)
+    safeLookup [] _ = Left $ printf "denumSetString: %s is not a valid constructor" txt
+
+-- | Try to update an enum with its index. Fail if out of bounds.
+denumSetIndex :: DSimpleEnum -> Int -> Either String DSimpleEnum
+denumSetIndex (DSimpleEnum constructors _) k
+  | k < 0 = Left $ printf "denumSetIndex: index %d is negative" k
+  | k >= length constructors =
+      Left $
+      printf "denumSetIndex: index %d is too large (%d constructors)" k (length constructors)
+  | otherwise = Right $ DSimpleEnum constructors k
+
+-- | Returns True if the __type__ of fields is the same.
+sameDFieldType :: DField -> DField -> Bool
+sameDFieldType (DDouble _) (DDouble _) = True
+sameDFieldType (DFloat _) (DFloat _) = True
+sameDFieldType (DInt _) (DInt _) = True
+sameDFieldType (DString _) (DString _) = True
+sameDFieldType DSorry DSorry = True
+sameDFieldType (DDouble _) _ = False
+sameDFieldType (DFloat _) _ = False
+sameDFieldType (DInt _) _ = False
+sameDFieldType (DString _) _ = False
+sameDFieldType DSorry _ = False
+
 describeDField :: DField -> String
-describeDField (DBool _) = "Bool"
 describeDField (DInt _) = "Int"
 describeDField (DDouble _) = "Double"
 describeDField (DFloat _) = "Float"
@@ -68,8 +118,8 @@ toDData x = toDData' accessors
     toDData' (Left field) = Left (toDField field)
 
     toDConstructor :: GAConstructor a -> DConstructor
-    toDConstructor (GASum (GASimpleEnum names f)) =
-      DSum (DSimpleEnum names (x ^. f))
+    toDConstructor (GASum e) =
+      DSum (DSimpleEnum (eConstructors e) (eToIndex e x))
       
     toDConstructor (GAConstructor cname fields) =
       DConstructor cname $ map (\(n, f) -> (n, toDData' f)) fields
@@ -111,12 +161,14 @@ updateConstructor :: forall a
                      -> GAConstructor a
                      -> DConstructor
                      -> Either String a
-updateConstructor x (GASum (GASimpleEnum anames intLens)) (DSum (DSimpleEnum dnames k))
+updateConstructor x (GASum aenum) (DSum (DSimpleEnum dnames k))
   | anames /= dnames =
       Left $
       "accessor sum options " ++ showList' anames ++
       " doesn't match dynamic sum options " ++ showList' dnames
-  | otherwise = Right $ (intLens .~ k) x
+  | otherwise = eFromIndex aenum x k
+  where
+    anames = eConstructors aenum
 updateConstructor x0 (GAConstructor aconName afields) (DConstructor dconName dfields)
   | aconName /= dconName =
       Left $
@@ -148,8 +200,8 @@ updateConstructor x0 (GAConstructor aconName afields) (DConstructor dconName dfi
       f _ _ _ = lengthMismatch
 updateConstructor _ (GAConstructor aconName _) (DSum (DSimpleEnum dnames _)) =
   Left $ "got GAConstructor (" ++ aconName ++ ") but DSum ([" ++ showList' dnames ++ "])"
-updateConstructor _ (GASum (GASimpleEnum anames _)) (DConstructor dconName _) =
-  Left $ "got GASum ([" ++ showList' anames ++ "]) but DConstructor (" ++ dconName ++ ")"
+updateConstructor _ (GASum aenum) (DConstructor dconName _) =
+  Left $ "got GASum ([" ++ showList' (eConstructors aenum) ++ "]) but DConstructor (" ++ dconName ++ ")"
 
 
 updateField :: a -> GAField a -> DField -> Either String a
