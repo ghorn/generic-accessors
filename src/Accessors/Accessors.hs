@@ -22,6 +22,7 @@ module Accessors.Accessors
        , flatten'
        , showTree
        , showFlat
+       , GLookup(..)
        ) where
 
 import GHC.Generics

@@ -15,6 +15,7 @@ module Accessors
        , flatten'
        , showTree
        , showFlat
+       , GLookup(..)
        ) where
 
 import Accessors.Accessors
