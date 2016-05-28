@@ -1,8 +1,11 @@
 {-# OPTIONS_GHC -Wall -fno-warn-orphans #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE TypeOperators #-}
 
 module Accessors.Instances () where
 
+import Control.Compose ( (:.)(..), unO )
 import Control.Lens ( Lens' )
 import qualified Linear
 import GHC.Word
@@ -212,8 +215,10 @@ realFracLens :: (Fractional a, Real a) => Lens' a Double
 realFracLens f x = fmap realToFrac (f (realToFrac x))
 
 -- other types
+instance Lookup (g (f a)) => Lookup ((g :. f) a) where
+  toAccessorTree lens0 = toAccessorTree (lens0 . (\f x -> fmap O (f (unO x))))
 instance Lookup a => Lookup (Rot f1 f2 a) where
-  toAccessorTree lens0 = toAccessorTree (lens0 . (\f x -> fmap Rot (f (unR x))))
+  toAccessorTree lens0 = toAccessorTree (lens0 . (\f x -> fmap Rot (f (unRot x))))
 instance Lookup a => Lookup (V3T f a) where
   toAccessorTree lens0 = toAccessorTree (lens0 . (\f x -> fmap V3T (f (unV x))))
 instance Lookup a => Lookup (Euler a)
