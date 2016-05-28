@@ -5,7 +5,7 @@
 
 module Accessors.Instances () where
 
-import Control.Compose ( (:.)(..), unO )
+import Control.Compose ( (:.)(..), Id(..), unO, unId )
 import Control.Lens ( Lens' )
 import qualified Linear
 import GHC.Word
@@ -215,6 +215,8 @@ realFracLens :: (Fractional a, Real a) => Lens' a Double
 realFracLens f x = fmap realToFrac (f (realToFrac x))
 
 -- other types
+instance Lookup a => Lookup (Id a) where
+  toAccessorTree lens0 = toAccessorTree (lens0 . (\f x -> fmap Id (f (unId x))))
 instance Lookup (g (f a)) => Lookup ((g :. f) a) where
   toAccessorTree lens0 = toAccessorTree (lens0 . (\f x -> fmap O (f (unO x))))
 instance Lookup a => Lookup (Rot f1 f2 a) where
