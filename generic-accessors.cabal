@@ -38,7 +38,7 @@ library
                      , binary
 
   ghc-options:      -O2 -Wall
-  ghc-prof-options: -O2 -Wall -prof -fprof-auto -fprof-cafs -rtsopts
+  ghc-prof-options: -O2 -Wall
 
 
 test-suite unit-tests
