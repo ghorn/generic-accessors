@@ -1,3 +1,7 @@
+0.6.0.1
+---
+* spatial-math.0.3.0.0 compatability
+
 0.6.0.0
 ---
 * Split Datatype/Constructor/Field more cleanly.
