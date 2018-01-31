@@ -6,6 +6,7 @@
 module Accessors.Dynamic
        ( DTree, DData(..), DConstructor(..), DSimpleEnum(..), DField(..)
        , toDData, updateLookupable, describeDField, sameDFieldType
+       , diffDTrees
          -- * some utility functions for working with DSimpleEnums
        , denumToString, denumToStringOrMsg, denumSetString, denumSetIndex
        ) where
@@ -15,6 +16,7 @@ import GHC.Generics
 import Data.Binary ( Binary )
 import Data.Serialize ( Serialize )
 import Data.Data ( Data )
+import Data.Either ( partitionEithers )
 import Data.List ( intercalate )
 import Data.Typeable ( Typeable )
 import Control.Lens
@@ -120,7 +122,7 @@ toDData x = toDData' accessors
     toDConstructor :: GAConstructor a -> DConstructor
     toDConstructor (GASum e) =
       DSum (DSimpleEnum (eConstructors e) (eToIndex e x))
-      
+
     toDConstructor (GAConstructor cname fields) =
       DConstructor cname $ map (\(n, f) -> (n, toDData' f)) fields
 
@@ -182,7 +184,7 @@ updateConstructor x0 (GAConstructor aconName afields) (DConstructor dconName dfi
         "dynamic fields have different length than accessor fields\n" ++
         "dynamic fields: " ++ show (map fst dfields) ++ "\n" ++
         "accessor fields: " ++ show (map fst afields)
-        
+
       f :: a
            -> [(Maybe String, Either (GAField a) (GAData a))]
            -> [(Maybe String, DTree)]
@@ -219,3 +221,81 @@ fieldMismatch :: GAField a -> DField -> String
 fieldMismatch f d =
   "accessor GAField " ++ describeGAField f ++
   " got incompatible dynamic DField " ++ describeDField d
+
+
+diffDTrees :: DTree -> DTree -> [String]
+diffDTrees = diffDTrees' []
+
+showName :: [String] -> String
+showName = intercalate "." . reverse
+
+diffDTrees' :: [String] -> DTree -> DTree -> [String]
+diffDTrees' name (Left x) (Left y) = case diffDFields name x y of
+  Nothing -> []
+  Just r -> [r]
+diffDTrees' name (Right x) (Right y) = diffDData name x y
+diffDTrees' name _ _ = [showName name ++ " have different types"]
+
+diffDFields :: [String] -> DField -> DField -> Maybe String
+diffDFields name (DDouble x) (DDouble y) = diffEq name x y
+diffDFields name (DFloat  x) (DFloat  y) = diffEq name x y
+diffDFields name (DInt    x) (DInt    y) = diffEq name x y
+diffDFields name (DString x) (DString y) = diffEq name x y
+diffDFields name DSorry DSorry = Just (showName name ++ ": can't diff this type")
+diffDFields name x y
+  | sameDFieldType x y = Just $ showName name ++ ": ERROR! unhandled type " ++ show (x, y)
+  | otherwise = Just $ showName name ++ ": has different types"
+
+diffEq :: (Eq a, Show a) => [String] -> a -> a -> Maybe String
+diffEq name x y
+  | x == y = Nothing
+  | otherwise = Just (showName name ++ ": " ++ show x ++ " /= " ++ show y)
+
+
+data MaybeRecords
+  = Record [(String, DTree)]
+  | NoRecord [DTree]
+  | Mixed
+  | EmptyCon
+
+toMaybeRecords :: [(Maybe String, DTree)] -> MaybeRecords
+toMaybeRecords xs = case partitionEithers (map f xs) of
+  ([], []) -> EmptyCon
+  ([], r) -> Record r
+  (r, []) -> NoRecord r
+  _ -> Mixed
+  where
+    f (Just x, t) = Right (x, t)
+    f (Nothing, t) = Left t
+
+diffDData :: [String] -> DData -> DData -> [String]
+diffDData name (DData dx (DSum sx@(DSimpleEnum csx kx))) (DData dy (DSum sy@(DSimpleEnum csy ky)))
+  | (dx /= dy) || (csx /= csy) = [showName name ++ " have different types"]
+  | kx /= ky = case (denumToString sx, denumToString sy) of
+      (Right nx, Right ny) -> [showName name ++ ": " ++ nx ++ " /= " ++ ny]
+      (nx, ny) -> [showName name ++ ": ERROR converting to enum! " ++ intercalate ", " (lefts [nx, ny])]
+  | otherwise = []
+diffDData name (DData dx (DConstructor cx xs)) (DData dy (DConstructor cy ys))
+  | (dx, cx) /= (dy, cy) = [showName name ++ " has different types " ++ show ((dx, cx), (dy, cy))]
+  | otherwise = case (toMaybeRecords xs, toMaybeRecords ys) of
+      (Mixed, Mixed) -> [showName name ++ " has mixed types WTF"]
+      (EmptyCon, EmptyCon) -> []
+      (NoRecord x, NoRecord y)
+        | length x == length y ->
+            let diffChild k = diffDTrees' (arrayName k:name)
+            in concat $ zipWith3 diffChild [0..] x y
+        | otherwise -> [showName name ++ " has different types"]
+      (Record x, Record y)
+        | map fst x /= map fst y -> [showName name ++ " has different types"]
+      _ -> [showName name ++ " has different types"]
+diffDData name _ _ = [showName name ++ " has different types"]
+
+--  | otherwise = zipWith diffDData
+arrayName :: Int -> String
+arrayName k = '[':(show k ++ "]")
+
+
+lefts :: [Either a b] -> [a]
+lefts ((Left x):xs) = x:lefts xs
+lefts ((Right _):xs) = lefts xs
+lefts [] = []
