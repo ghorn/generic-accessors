@@ -223,8 +223,8 @@ fieldMismatch f d =
   " got incompatible dynamic DField " ++ describeDField d
 
 
-diffDTrees :: DTree -> DTree -> [String]
-diffDTrees = diffDTrees' []
+diffDTrees :: String -> DTree -> DTree -> [String]
+diffDTrees rootName = diffDTrees' [rootName]
 
 showName :: [String] -> String
 showName = intercalate "." . reverse
@@ -287,6 +287,11 @@ diffDData name (DData dx (DConstructor cx xs)) (DData dy (DConstructor cy ys))
         | otherwise -> [showName name ++ " has different types"]
       (Record x, Record y)
         | map fst x /= map fst y -> [showName name ++ " has different types"]
+        | otherwise ->
+            let diffChild (nx, x') (ny, y')
+                  | nx == ny = diffDTrees' (nx:name) x' y'
+                  | otherwise = error $ "internal error: record names don't match " ++ show (nx, ny)
+            in concat $ zipWith diffChild x y
       _ -> [showName name ++ " has different types"]
 diffDData name _ _ = [showName name ++ " has different types"]
 

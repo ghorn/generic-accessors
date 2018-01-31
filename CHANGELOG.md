@@ -1,3 +1,11 @@
+0.6.2.0
+---
+* bugfix diffDTree
+
+0.6.1.0
+---
+* add diffDTree
+
 0.6.0.1
 ---
 * spatial-math.0.3.0.0 compatability
