@@ -69,6 +69,7 @@ instance (Lookup a, Lookup b, Lookup c, Lookup d) => Lookup (a, b, c, d) where
       lens4 :: Lens' (a, b, c, d) d
       lens4 f (x, y, z, w) = fmap (\w' -> (x, y, z, w')) (f w)
 
+-- TODO(MP): Product?  Const?  Identity?
 
 -- some instance from linear
 instance Lookup a => Lookup (Linear.V0 a) where
@@ -113,92 +114,93 @@ instance Lookup a => Lookup (Linear.Quaternion a) where
 -- basic types
 instance Lookup () where -- hack to get dummy tree
   toAccessorTree _ = Left FieldSorry
-instance Lookup Int where
-  toAccessorTree lens = Left (FieldInt lens)
+instance Lookup Int8 where
+  toAccessorTree lens = Left (FieldInt8 lens)
+instance Lookup Int16 where
+  toAccessorTree lens = Left (FieldInt16 lens)
+instance Lookup Int32 where
+  toAccessorTree lens = Left (FieldInt32 lens)
+instance Lookup Int64 where
+  toAccessorTree lens = Left (FieldInt64 lens)
+instance Lookup Word8 where
+  toAccessorTree lens = Left (FieldWord8 lens)
+instance Lookup Word16 where
+  toAccessorTree lens = Left (FieldWord16 lens)
+instance Lookup Word32 where
+  toAccessorTree lens = Left (FieldWord32 lens)
+instance Lookup Word64 where
+  toAccessorTree lens = Left (FieldWord64 lens)
 instance Lookup Float where
   toAccessorTree lens = Left (FieldFloat lens)
 instance Lookup Double where
   toAccessorTree lens = Left (FieldDouble lens)
-instance Lookup Bool
+instance Lookup Bool where
+  toAccessorTree lens = Left (FieldBool lens)
 instance Lookup String where
   toAccessorTree lens = Left (FieldString lens)
 
 -- Word types
 instance Lookup Word where
-  toAccessorTree lens0 = Left (FieldInt (lens0 . integralLens))
-instance Lookup Word8 where
-  toAccessorTree lens0 = Left (FieldInt (lens0 . integralLens))
-instance Lookup Word16 where
-  toAccessorTree lens0 = Left (FieldInt (lens0 . integralLens))
-instance Lookup Word32 where
-  toAccessorTree lens0 = Left (FieldInt (lens0 . integralLens))
-instance Lookup Word64 where
-  toAccessorTree lens0 = Left (FieldInt (lens0 . integralLens))
+  toAccessorTree lens0 = Left (FieldWord64 (lens0 . integralLens))
 
 -- Int types
-instance Lookup Int8 where
-  toAccessorTree lens0 = Left (FieldInt (lens0 . integralLens))
-instance Lookup Int16 where
-  toAccessorTree lens0 = Left (FieldInt (lens0 . integralLens))
-instance Lookup Int32 where
-  toAccessorTree lens0 = Left (FieldInt (lens0 . integralLens))
-instance Lookup Int64 where
-  toAccessorTree lens0 = Left (FieldInt (lens0 . integralLens))
+instance Lookup Int where
+  toAccessorTree lens0 = Left (FieldInt64 (lens0 . integralLens))
 
 -- C types
 -- todo(greg): some of these have inappropriate fields
 instance Lookup CChar where
-  toAccessorTree lens0 = Left (FieldInt (lens0 . integralLens))
+  toAccessorTree lens0 = Left (FieldInt8 (lens0 . integralLens))
 instance Lookup CSChar where
-  toAccessorTree lens0 = Left (FieldInt (lens0 . integralLens))
+  toAccessorTree lens0 = Left (FieldInt8 (lens0 . integralLens))
 instance Lookup CUChar where
-  toAccessorTree lens0 = Left (FieldInt (lens0 . integralLens))
+  toAccessorTree lens0 = Left (FieldWord8 (lens0 . integralLens))
 instance Lookup CShort where
-  toAccessorTree lens0 = Left (FieldInt (lens0 . integralLens))
+  toAccessorTree lens0 = Left (FieldInt16 (lens0 . integralLens))
 instance Lookup CUShort where
-  toAccessorTree lens0 = Left (FieldInt (lens0 . integralLens))
+  toAccessorTree lens0 = Left (FieldWord16 (lens0 . integralLens))
 instance Lookup CInt where
-  toAccessorTree lens0 = Left (FieldInt (lens0 . integralLens))
+  toAccessorTree lens0 = Left (FieldInt32 (lens0 . integralLens))
 instance Lookup CUInt where
-  toAccessorTree lens0 = Left (FieldInt (lens0 . integralLens))
+  toAccessorTree lens0 = Left (FieldWord32 (lens0 . integralLens))
 instance Lookup CLong where
-  toAccessorTree lens0 = Left (FieldInt (lens0 . integralLens))
+  toAccessorTree lens0 = Left (FieldInt64 (lens0 . integralLens))
 instance Lookup CULong where
-  toAccessorTree lens0 = Left (FieldInt (lens0 . integralLens))
+  toAccessorTree lens0 = Left (FieldWord64 (lens0 . integralLens))
 instance Lookup CPtrdiff where
-  toAccessorTree lens0 = Left (FieldInt (lens0 . integralLens))
+  toAccessorTree lens0 = Left (FieldInt64 (lens0 . integralLens))
 instance Lookup CSize where
-  toAccessorTree lens0 = Left (FieldInt (lens0 . integralLens))
+  toAccessorTree lens0 = Left (FieldWord64 (lens0 . integralLens))
 instance Lookup CWchar where
-  toAccessorTree lens0 = Left (FieldInt (lens0 . integralLens))
+  toAccessorTree lens0 = Left (FieldInt32 (lens0 . integralLens))
 instance Lookup CSigAtomic where
-  toAccessorTree lens0 = Left (FieldInt (lens0 . integralLens))
+  toAccessorTree lens0 = Left (FieldInt32 (lens0 . integralLens))
 instance Lookup CLLong where
-  toAccessorTree lens0 = Left (FieldInt (lens0 . integralLens))
+  toAccessorTree lens0 = Left (FieldInt64 (lens0 . integralLens))
 instance Lookup CULLong where
-  toAccessorTree lens0 = Left (FieldInt (lens0 . integralLens))
+  toAccessorTree lens0 = Left (FieldWord64 (lens0 . integralLens))
 instance Lookup CIntPtr where
-  toAccessorTree lens0 = Left (FieldInt (lens0 . integralLens))
+  toAccessorTree lens0 = Left (FieldInt64 (lens0 . integralLens))
 instance Lookup CUIntPtr where
-  toAccessorTree lens0 = Left (FieldInt (lens0 . integralLens))
+  toAccessorTree lens0 = Left (FieldWord64 (lens0 . integralLens))
 instance Lookup CIntMax where
-  toAccessorTree lens0 = Left (FieldInt (lens0 . integralLens))
+  toAccessorTree lens0 = Left (FieldInt64 (lens0 . integralLens))
 instance Lookup CUIntMax where
-  toAccessorTree lens0 = Left (FieldInt (lens0 . integralLens))
+  toAccessorTree lens0 = Left (FieldWord64 (lens0 . integralLens))
 instance Lookup CClock where
-  toAccessorTree lens0 = Left (FieldInt (lens0 . clockLens))
+  toAccessorTree lens0 = Left (FieldInt64 (lens0 . clockLens))
     where
       clockLens f (CClock x) = fmap (CClock . fromIntegral) (f (fromIntegral x))
 instance Lookup CTime where
-  toAccessorTree lens0 = Left (FieldInt (lens0 . timeLens))
+  toAccessorTree lens0 = Left (FieldInt64 (lens0 . timeLens))
     where
       timeLens f (CTime x) = fmap (CTime . fromIntegral) (f (fromIntegral x))
 instance Lookup CUSeconds where
-  toAccessorTree lens0 = Left (FieldInt (lens0 . usecondsLens))
+  toAccessorTree lens0 = Left (FieldWord32 (lens0 . usecondsLens))
     where
       usecondsLens f (CUSeconds x) = fmap (CUSeconds . fromIntegral) (f (fromIntegral x))
 instance Lookup CSUSeconds where
-  toAccessorTree lens0 = Left (FieldInt (lens0 . susecondsLens))
+  toAccessorTree lens0 = Left (FieldInt64 (lens0 . susecondsLens))
     where
       susecondsLens f (CSUSeconds x) = fmap (CSUSeconds . fromIntegral) (f (fromIntegral x))
 instance Lookup CFloat where
@@ -207,7 +209,7 @@ instance Lookup CDouble where
   toAccessorTree lens0 = Left (FieldDouble (lens0 . realFracLens))
 
 {-# INLINE integralLens #-}
-integralLens :: Integral a => Lens' a Int
+integralLens :: (Integral a, Integral b) => Lens' a b
 integralLens f x = fmap fromIntegral (f (fromIntegral x))
 
 {-# INLINE realFracLens #-}
