@@ -14,6 +14,8 @@ module Accessors.Dynamic
 import GHC.Generics
 
 import Data.Binary ( Binary )
+import Data.Int ( Int8, Int16, Int32, Int64 )
+import Data.Word ( Word8, Word16, Word32, Word64 )
 import Data.Serialize ( Serialize )
 import Data.Data ( Data )
 import Data.Either ( partitionEithers )
@@ -47,7 +49,15 @@ instance Binary DSimpleEnum
 data DField =
   DDouble Double
   | DFloat Float
-  | DInt Int
+  | DInt8 Int8
+  | DInt16 Int16
+  | DInt32 Int32
+  | DInt64 Int64
+  | DWord8 Word8
+  | DWord16 Word16
+  | DWord32 Word32
+  | DWord64 Word64
+  | DBool Bool
   | DString String
   | DSorry
   deriving (Generic, Show, Eq, Ord, Data, Typeable)
@@ -93,22 +103,46 @@ denumSetIndex (DSimpleEnum constructors _) k
 -- | Returns True if the __type__ of fields is the same.
 sameDFieldType :: DField -> DField -> Bool
 sameDFieldType (DDouble _) (DDouble _) = True
-sameDFieldType (DFloat _) (DFloat _) = True
-sameDFieldType (DInt _) (DInt _) = True
+sameDFieldType (DFloat _) (DFloat _)   = True
+sameDFieldType (DInt8 _) (DInt8 _)     = True
+sameDFieldType (DInt16 _) (DInt16 _)   = True
+sameDFieldType (DInt32 _) (DInt32 _)   = True
+sameDFieldType (DInt64 _) (DInt64 _)   = True
+sameDFieldType (DWord8 _) (DWord8 _)   = True
+sameDFieldType (DWord16 _) (DWord16 _) = True
+sameDFieldType (DWord32 _) (DWord32 _) = True
+sameDFieldType (DWord64 _) (DWord64 _) = True
+sameDFieldType (DBool _) (DBool _)     = True
 sameDFieldType (DString _) (DString _) = True
-sameDFieldType DSorry DSorry = True
-sameDFieldType (DDouble _) _ = False
-sameDFieldType (DFloat _) _ = False
-sameDFieldType (DInt _) _ = False
-sameDFieldType (DString _) _ = False
-sameDFieldType DSorry _ = False
+sameDFieldType DSorry DSorry           = True
+sameDFieldType (DDouble _) _           = False
+sameDFieldType (DFloat _)  _           = False
+sameDFieldType (DInt8 _)   _           = False
+sameDFieldType (DInt16 _)  _           = False
+sameDFieldType (DInt32 _)  _           = False
+sameDFieldType (DInt64 _)  _           = False
+sameDFieldType (DWord8 _)  _           = False
+sameDFieldType (DWord16 _) _           = False
+sameDFieldType (DWord32 _) _           = False
+sameDFieldType (DWord64 _) _           = False
+sameDFieldType (DBool _)   _           = False
+sameDFieldType (DString _) _           = False
+sameDFieldType DSorry      _           = False
 
 describeDField :: DField -> String
-describeDField (DInt _) = "Int"
+describeDField (DBool _)   = "Bool"
+describeDField (DInt8 _)   = "Int8"
+describeDField (DInt16 _)  = "Int16"
+describeDField (DInt32 _)  = "Int32"
+describeDField (DInt64 _)  = "Int64"
+describeDField (DWord8 _)  = "Word8"
+describeDField (DWord16 _) = "Word16"
+describeDField (DWord32 _) = "Word32"
+describeDField (DWord64 _) = "Word64"
 describeDField (DDouble _) = "Double"
-describeDField (DFloat _) = "Float"
+describeDField (DFloat _)  = "Float"
 describeDField (DString _) = "String"
-describeDField DSorry = "Sorry"
+describeDField DSorry      = "Sorry"
 
 -- | convert to a dynamic value
 toDData :: forall a . Lookup a => a -> DTree
@@ -127,11 +161,19 @@ toDData x = toDData' accessors
       DConstructor cname $ map (\(n, f) -> (n, toDData' f)) fields
 
     toDField :: GAField a -> DField
-    toDField (FieldInt f) = DInt (x ^. f)
     toDField (FieldDouble f) = DDouble (x ^. f)
-    toDField (FieldFloat f) = DFloat (x ^. f)
+    toDField (FieldFloat f)  = DFloat (x ^. f)
+    toDField (FieldInt8 f)   = DInt8 (x ^. f)
+    toDField (FieldInt16 f)  = DInt16 (x ^. f)
+    toDField (FieldInt32 f)  = DInt32 (x ^. f)
+    toDField (FieldInt64 f)  = DInt64 (x ^. f)
+    toDField (FieldWord8 f)  = DWord8 (x ^. f)
+    toDField (FieldWord16 f) = DWord16 (x ^. f)
+    toDField (FieldWord32 f) = DWord32 (x ^. f)
+    toDField (FieldWord64 f) = DWord64 (x ^. f)
+    toDField (FieldBool f)   = DBool (x ^. f)
     toDField (FieldString f) = DString (x ^. f)
-    toDField FieldSorry = DSorry
+    toDField FieldSorry      = DSorry
 
 
 -- | Update something using a dynamic representation
@@ -208,14 +250,30 @@ updateConstructor _ (GASum aenum) (DConstructor dconName _) =
 
 updateField :: a -> GAField a -> DField -> Either String a
 updateField x0 (FieldDouble f) (DDouble x) = Right $ (f .~ x) x0
-updateField x0 (FieldFloat f) (DFloat x) = Right $ (f .~ x) x0
-updateField x0 (FieldInt f) (DInt x) = Right $ (f .~ x) x0
+updateField x0 (FieldFloat f) (DFloat x)   = Right $ (f .~ x) x0
+updateField x0 (FieldInt8 f) (DInt8 x)     = Right $ (f .~ x) x0
+updateField x0 (FieldInt16 f) (DInt16 x)   = Right $ (f .~ x) x0
+updateField x0 (FieldInt32 f) (DInt32 x)   = Right $ (f .~ x) x0
+updateField x0 (FieldInt64 f) (DInt64 x)   = Right $ (f .~ x) x0
+updateField x0 (FieldWord8 f) (DWord8 x)   = Right $ (f .~ x) x0
+updateField x0 (FieldWord16 f) (DWord16 x) = Right $ (f .~ x) x0
+updateField x0 (FieldWord32 f) (DWord32 x) = Right $ (f .~ x) x0
+updateField x0 (FieldWord64 f) (DWord64 x) = Right $ (f .~ x) x0
+updateField x0 (FieldBool f) (DBool x)     = Right $ (f .~ x) x0
 updateField x0 (FieldString f) (DString x) = Right $ (f .~ x) x0
-updateField x0 FieldSorry _ = Right x0
-updateField _ f@(FieldDouble _) d = Left (fieldMismatch f d)
-updateField _ f@(FieldFloat _) d = Left (fieldMismatch f d)
-updateField _ f@(FieldInt _) d = Left (fieldMismatch f d)
-updateField _ f@(FieldString _) d = Left (fieldMismatch f d)
+updateField x0 FieldSorry _                = Right x0
+updateField _ f@(FieldDouble _) d          = Left (fieldMismatch f d)
+updateField _ f@(FieldFloat _)  d          = Left (fieldMismatch f d)
+updateField _ f@(FieldInt8 _)   d          = Left (fieldMismatch f d)
+updateField _ f@(FieldInt16 _)  d          = Left (fieldMismatch f d)
+updateField _ f@(FieldInt32 _)  d          = Left (fieldMismatch f d)
+updateField _ f@(FieldInt64 _)  d          = Left (fieldMismatch f d)
+updateField _ f@(FieldWord8 _)  d          = Left (fieldMismatch f d)
+updateField _ f@(FieldWord16 _) d          = Left (fieldMismatch f d)
+updateField _ f@(FieldWord32 _) d          = Left (fieldMismatch f d)
+updateField _ f@(FieldWord64 _) d          = Left (fieldMismatch f d)
+updateField _ f@(FieldBool _)   d          = Left (fieldMismatch f d)
+updateField _ f@(FieldString _) d          = Left (fieldMismatch f d)
 
 fieldMismatch :: GAField a -> DField -> String
 fieldMismatch f d =
@@ -237,11 +295,19 @@ diffDTrees' name (Right x) (Right y) = diffDData name x y
 diffDTrees' name _ _ = [showName name ++ " have different types"]
 
 diffDFields :: [String] -> DField -> DField -> Maybe String
-diffDFields name (DDouble x) (DDouble y) = diffEq name x y
-diffDFields name (DFloat  x) (DFloat  y) = diffEq name x y
-diffDFields name (DInt    x) (DInt    y) = diffEq name x y
-diffDFields name (DString x) (DString y) = diffEq name x y
-diffDFields name DSorry DSorry = Just (showName name ++ ": can't diff this type")
+diffDFields name (DDouble x) (DDouble y)       = diffEq name x y
+diffDFields name (DFloat  x) (DFloat  y)       = diffEq name x y
+diffDFields name (DInt8    x) (DInt8    y)     = diffEq name x y
+diffDFields name (DInt16    x) (DInt16    y)   = diffEq name x y
+diffDFields name (DInt32    x) (DInt32    y)   = diffEq name x y
+diffDFields name (DInt64    x) (DInt64    y)   = diffEq name x y
+diffDFields name (DWord8    x) (DWord8    y)   = diffEq name x y
+diffDFields name (DWord16    x) (DWord16    y) = diffEq name x y
+diffDFields name (DWord32    x) (DWord32    y) = diffEq name x y
+diffDFields name (DWord64    x) (DWord64    y) = diffEq name x y
+diffDFields name (DBool x) (DBool y)           = diffEq name x y
+diffDFields name (DString x) (DString y)       = diffEq name x y
+diffDFields name DSorry DSorry                 = Just (showName name ++ ": can't diff this type")
 diffDFields name x y
   | sameDFieldType x y = Just $ showName name ++ ": ERROR! unhandled type " ++ show (x, y)
   | otherwise = Just $ showName name ++ ": has different types"

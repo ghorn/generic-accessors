@@ -5,6 +5,8 @@ module Main where
 
 import GHC.Generics ( Generic )
 
+import Data.Int ( Int8, Int16 )
+import Data.Word ( Word64 )
 import Data.Monoid ( mempty )
 import Text.Printf ( printf )
 import Test.Framework ( ColorMode(..), RunnerOptions'(..), TestOptions'(..), defaultMainWithOpts )
@@ -33,7 +35,7 @@ my_test_opts :: TestOptions' Maybe
 my_test_opts = mempty { topt_timeout = Just (Just 2000000) }
 
 
-data Xyz a = Xyz { xx :: Int
+data Xyz a = Xyz { xx :: Int8
                  , yy :: Double
                  , zz :: Float
                  , bb :: (Bool, Bool, Bool)
@@ -41,8 +43,8 @@ data Xyz a = Xyz { xx :: Int
                  } deriving (Generic, Show)
 data One = MkOne { one :: Double
                  } deriving (Generic, Show)
-data Foo = MkFoo { aaa :: Int
-                 , bbb :: Xyz Int
+data Foo = MkFoo { aaa :: Int16
+                 , bbb :: Xyz Word64
                  , lol :: Bool
                  , notlol :: Bool
                  , yoyo :: Xyz (Xyz Double)
@@ -105,7 +107,7 @@ assertEqualString' ex ey = HUnit.assertBool msg (ex == ey)
 toDValueTest :: HUnit.Assertion
 toDValueTest = assertEqualString x y
   where
-    x = "Right (DData \"Xyz\" (DConstructor \"Xyz\" [(Just \"xx\",Left (DInt 1)),(Just \"yy\",Left (DDouble 2.0)),(Just \"zz\",Left (DFloat 3.0)),(Just \"bb\",Right (DData \"(,,)\" (DConstructor \"(,,)\" [(Just \"(x,_,_)\",Right (DData \"Bool\" (DSum (DSimpleEnum [\"False\",\"True\"] 1)))),(Just \"(_,x,_)\",Right (DData \"Bool\" (DSum (DSimpleEnum [\"False\",\"True\"] 0)))),(Just \"(_,_,x)\",Right (DData \"Bool\" (DSum (DSimpleEnum [\"False\",\"True\"] 1))))]))),(Just \"ww\",Right (DData \"One\" (DConstructor \"MkOne\" [(Just \"one\",Left (DDouble 4.0))])))]))"
+    x = "Right (DData \"Xyz\" (DConstructor \"Xyz\" [(Just \"xx\",Left (DInt8 1)),(Just \"yy\",Left (DDouble 2.0)),(Just \"zz\",Left (DFloat 3.0)),(Just \"bb\",Right (DData \"(,,)\" (DConstructor \"(,,)\" [(Just \"(x,_,_)\",Left (DBool True)),(Just \"(_,x,_)\",Left (DBool False)),(Just \"(_,_,x)\",Left (DBool True))]))),(Just \"ww\",Right (DData \"One\" (DConstructor \"MkOne\" [(Just \"one\",Left (DDouble 4.0))])))]))"
 
     y = show (toDData (Xyz 1 2 3 (True, False, True) (MkOne 4)))
 
@@ -118,15 +120,15 @@ updateDValueTest = assertEqualString' (fmap show x) (fmap show y)
     dvalue =
       DData "Xyz" $
       DConstructor "Xyz" $
-      [ (Just "xx", Left (DInt 10))
+      [ (Just "xx", Left (DInt8 10))
       , (Just "yy", Left (DDouble 20.0))
       , (Just "zz", Left (DFloat 30.0))
       , ( Just "bb"
         , Right (DData "(,,)"
                  (DConstructor "(,,)"
-                  [ (Just "(x,_,_)", Right (DData "Bool" (DSum (DSimpleEnum ["False", "True"] 0))))
-                  , (Just "(_,x,_)", Right (DData "Bool" (DSum (DSimpleEnum ["False", "True"] 1))))
-                  , (Just "(_,_,x)", Right (DData "Bool" (DSum (DSimpleEnum ["False", "True"] 1))))
+                  [ (Just "(x,_,_)", Left (DBool False))
+                  , (Just "(_,x,_)", Left (DBool True))
+                  , (Just "(_,_,x)", Left (DBool True))
                   ]))
         )
       , (Just "ww", Right (DData "One"
@@ -150,15 +152,15 @@ badUpdateDValueTest = assertEqualString' (fmap show x) (fmap show y)
     dvalue =
       DData "Xyz" $
       DConstructor "Xyz" $
-      [ (Just "xx", Left (DInt 10))
+      [ (Just "xx", Left (DInt8 10))
       , (Just "yy", Left (DDouble 20.0))
       , (Just "zz", Left (DFloat 30.0))
       , ( Just "b"
         , Right (DData "(,,)"
                  (DConstructor "(,,)"
-                  [ (Just "(x,_,_)", Right (DData "Bool" (DSum (DSimpleEnum ["False", "True"] 0))))
-                  , (Just "(_,x,_)", Right (DData "Bool" (DSum (DSimpleEnum ["False", "True"] 1))))
-                  , (Just "(_,_,x)", Right (DData "Bool" (DSum (DSimpleEnum ["False", "True"] 1))))
+                  [ (Just "(x,_,_)", Left (DBool False))
+                  , (Just "(_,x,_)", Left (DBool True))
+                  , (Just "(_,_,x)", Left (DBool True))
                   ]))
         )
       , (Just "ww", Right (DData "One"

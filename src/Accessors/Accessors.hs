@@ -27,6 +27,8 @@ module Accessors.Accessors
 
 import GHC.Generics
 
+import Data.Int ( Int8, Int16, Int32, Int64 )
+import Data.Word ( Word8, Word16, Word32, Word64 )
 import Control.Lens ( Lens', Prism', (^.), (.~), preview, prism, withPrism )
 import Data.List ( intercalate )
 import Text.Printf ( printf )
@@ -51,7 +53,15 @@ data GASimpleEnum a =
 data GAField a =
   FieldDouble (Lens' a Double)
   | FieldFloat (Lens' a Float)
-  | FieldInt (Lens' a Int)
+  | FieldInt8 (Lens' a Int8)
+  | FieldInt16 (Lens' a Int16)
+  | FieldInt32 (Lens' a Int32)
+  | FieldInt64 (Lens' a Int64)
+  | FieldWord8 (Lens' a Word8)
+  | FieldWord16 (Lens' a Word16)
+  | FieldWord32 (Lens' a Word32)
+  | FieldWord64 (Lens' a Word64)
+  | FieldBool (Lens' a Bool)
   | FieldString (Lens' a String)
   | FieldSorry -- ^ a field which is not yet supported
 
@@ -85,23 +95,47 @@ instance Show (GAData a) where
 -- | Return the type of field, such as "Bool", "Double", "String", etc.
 describeGAField :: GAField a -> String
 describeGAField (FieldDouble _) = "Double"
-describeGAField (FieldFloat _) = "Float"
-describeGAField (FieldInt _) = "Int"
+describeGAField (FieldFloat _)  = "Float"
+describeGAField (FieldInt8 _)   = "Int8"
+describeGAField (FieldInt16 _)  = "Int16"
+describeGAField (FieldInt32 _)  = "Int32"
+describeGAField (FieldInt64 _)  = "Int64"
+describeGAField (FieldWord8 _)  = "Word8"
+describeGAField (FieldWord16 _) = "Word16"
+describeGAField (FieldWord32 _) = "Word32"
+describeGAField (FieldWord64 _) = "Word64"
+describeGAField (FieldBool _)   = "Bool"
 describeGAField (FieldString _) = "String"
-describeGAField FieldSorry = "Sorry"
+describeGAField FieldSorry      = "Sorry"
 
 -- | Returns True if the __type__ of fields is the same.
 sameFieldType :: GAField a -> GAField b -> Bool
 sameFieldType (FieldDouble _) (FieldDouble _) = True
-sameFieldType (FieldFloat _) (FieldFloat _) = True
-sameFieldType (FieldInt _) (FieldInt _) = True
+sameFieldType (FieldFloat _) (FieldFloat _)   = True
+sameFieldType (FieldInt8 _) (FieldInt8 _)     = True
+sameFieldType (FieldInt16 _) (FieldInt16 _)   = True
+sameFieldType (FieldInt32 _) (FieldInt32 _)   = True
+sameFieldType (FieldInt64 _) (FieldInt64 _)   = True
+sameFieldType (FieldWord8 _) (FieldWord8 _)   = True
+sameFieldType (FieldWord16 _) (FieldWord16 _) = True
+sameFieldType (FieldWord32 _) (FieldWord32 _) = True
+sameFieldType (FieldWord64 _) (FieldWord64 _) = True
+sameFieldType (FieldBool _) (FieldBool _)     = True
 sameFieldType (FieldString _) (FieldString _) = True
-sameFieldType FieldSorry FieldSorry = True
-sameFieldType (FieldDouble _) _ = False
-sameFieldType (FieldFloat _) _ = False
-sameFieldType (FieldInt _) _ = False
-sameFieldType (FieldString _) _ = False
-sameFieldType FieldSorry _ = False
+sameFieldType FieldSorry FieldSorry           = True
+sameFieldType (FieldDouble _)  _              = False
+sameFieldType (FieldFloat _)   _              = False
+sameFieldType (FieldInt8 _)    _              = False
+sameFieldType (FieldInt16 _)   _              = False
+sameFieldType (FieldInt32 _)   _              = False
+sameFieldType (FieldInt64 _)   _              = False
+sameFieldType (FieldWord8 _)   _              = False
+sameFieldType (FieldWord16 _)  _              = False
+sameFieldType (FieldWord32 _)  _              = False
+sameFieldType (FieldWord64 _)  _              = False
+sameFieldType (FieldBool _)    _              = False
+sameFieldType (FieldString _)  _              = False
+sameFieldType FieldSorry       _              = False
 
 accessors :: Lookup a => AccessorTree a
 accessors = toAccessorTree id
@@ -335,9 +369,17 @@ showAccTrees show' x trees spaces = concat cs ++ [spaces ++ "}"]
     cs = zipWith (showRecordField show' x spaces) trees ("{ " : repeat ", ")
 
 showFieldVal :: GAField a -> (Double -> String) -> a -> String
-showFieldVal (FieldInt lens) _ x = show (x ^. lens)
+showFieldVal (FieldInt8 lens) _ x = show (x ^. lens)
+showFieldVal (FieldInt16 lens) _ x = show (x ^. lens)
+showFieldVal (FieldInt32 lens) _ x = show (x ^. lens)
+showFieldVal (FieldInt64 lens) _ x = show (x ^. lens)
+showFieldVal (FieldWord8 lens) _ x = show (x ^. lens)
+showFieldVal (FieldWord16 lens) _ x = show (x ^. lens)
+showFieldVal (FieldWord32 lens) _ x = show (x ^. lens)
+showFieldVal (FieldWord64 lens) _ x = show (x ^. lens)
 showFieldVal (FieldDouble lens) show' x = show' (x ^. lens)
 showFieldVal (FieldFloat lens) show' x = show' (realToFrac (x ^. lens))
+showFieldVal (FieldBool lens) _ x = show (x ^. lens)
 showFieldVal (FieldString lens) _ x = x ^. lens
 showFieldVal FieldSorry _ _ = ""
 
