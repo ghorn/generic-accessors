@@ -134,8 +134,7 @@ instance Lookup Float where
   toAccessorTree lens = Left (FieldFloat lens)
 instance Lookup Double where
   toAccessorTree lens = Left (FieldDouble lens)
-instance Lookup Bool where
-  toAccessorTree lens = Left (FieldBool lens)
+instance Lookup Bool
 instance Lookup String where
   toAccessorTree lens = Left (FieldString lens)
 

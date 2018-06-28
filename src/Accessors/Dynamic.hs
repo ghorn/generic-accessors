@@ -57,7 +57,6 @@ data DField =
   | DWord16 Word16
   | DWord32 Word32
   | DWord64 Word64
-  | DBool Bool
   | DString String
   | DSorry
   deriving (Generic, Show, Eq, Ord, Data, Typeable)
@@ -112,7 +111,6 @@ sameDFieldType (DWord8 _) (DWord8 _)   = True
 sameDFieldType (DWord16 _) (DWord16 _) = True
 sameDFieldType (DWord32 _) (DWord32 _) = True
 sameDFieldType (DWord64 _) (DWord64 _) = True
-sameDFieldType (DBool _) (DBool _)     = True
 sameDFieldType (DString _) (DString _) = True
 sameDFieldType DSorry DSorry           = True
 sameDFieldType (DDouble _) _           = False
@@ -125,12 +123,10 @@ sameDFieldType (DWord8 _)  _           = False
 sameDFieldType (DWord16 _) _           = False
 sameDFieldType (DWord32 _) _           = False
 sameDFieldType (DWord64 _) _           = False
-sameDFieldType (DBool _)   _           = False
 sameDFieldType (DString _) _           = False
 sameDFieldType DSorry      _           = False
 
 describeDField :: DField -> String
-describeDField (DBool _)   = "Bool"
 describeDField (DInt8 _)   = "Int8"
 describeDField (DInt16 _)  = "Int16"
 describeDField (DInt32 _)  = "Int32"
@@ -171,7 +167,6 @@ toDData x = toDData' accessors
     toDField (FieldWord16 f) = DWord16 (x ^. f)
     toDField (FieldWord32 f) = DWord32 (x ^. f)
     toDField (FieldWord64 f) = DWord64 (x ^. f)
-    toDField (FieldBool f)   = DBool (x ^. f)
     toDField (FieldString f) = DString (x ^. f)
     toDField FieldSorry      = DSorry
 
@@ -259,7 +254,6 @@ updateField x0 (FieldWord8 f) (DWord8 x)   = Right $ (f .~ x) x0
 updateField x0 (FieldWord16 f) (DWord16 x) = Right $ (f .~ x) x0
 updateField x0 (FieldWord32 f) (DWord32 x) = Right $ (f .~ x) x0
 updateField x0 (FieldWord64 f) (DWord64 x) = Right $ (f .~ x) x0
-updateField x0 (FieldBool f) (DBool x)     = Right $ (f .~ x) x0
 updateField x0 (FieldString f) (DString x) = Right $ (f .~ x) x0
 updateField x0 FieldSorry _                = Right x0
 updateField _ f@(FieldDouble _) d          = Left (fieldMismatch f d)
@@ -272,7 +266,6 @@ updateField _ f@(FieldWord8 _)  d          = Left (fieldMismatch f d)
 updateField _ f@(FieldWord16 _) d          = Left (fieldMismatch f d)
 updateField _ f@(FieldWord32 _) d          = Left (fieldMismatch f d)
 updateField _ f@(FieldWord64 _) d          = Left (fieldMismatch f d)
-updateField _ f@(FieldBool _)   d          = Left (fieldMismatch f d)
 updateField _ f@(FieldString _) d          = Left (fieldMismatch f d)
 
 fieldMismatch :: GAField a -> DField -> String
@@ -305,7 +298,6 @@ diffDFields name (DWord8    x) (DWord8    y)   = diffEq name x y
 diffDFields name (DWord16    x) (DWord16    y) = diffEq name x y
 diffDFields name (DWord32    x) (DWord32    y) = diffEq name x y
 diffDFields name (DWord64    x) (DWord64    y) = diffEq name x y
-diffDFields name (DBool x) (DBool y)           = diffEq name x y
 diffDFields name (DString x) (DString y)       = diffEq name x y
 diffDFields name DSorry DSorry                 = Just (showName name ++ ": can't diff this type")
 diffDFields name x y

@@ -61,7 +61,6 @@ data GAField a =
   | FieldWord16 (Lens' a Word16)
   | FieldWord32 (Lens' a Word32)
   | FieldWord64 (Lens' a Word64)
-  | FieldBool (Lens' a Bool)
   | FieldString (Lens' a String)
   | FieldSorry -- ^ a field which is not yet supported
 
@@ -104,7 +103,6 @@ describeGAField (FieldWord8 _)  = "Word8"
 describeGAField (FieldWord16 _) = "Word16"
 describeGAField (FieldWord32 _) = "Word32"
 describeGAField (FieldWord64 _) = "Word64"
-describeGAField (FieldBool _)   = "Bool"
 describeGAField (FieldString _) = "String"
 describeGAField FieldSorry      = "Sorry"
 
@@ -120,7 +118,6 @@ sameFieldType (FieldWord8 _) (FieldWord8 _)   = True
 sameFieldType (FieldWord16 _) (FieldWord16 _) = True
 sameFieldType (FieldWord32 _) (FieldWord32 _) = True
 sameFieldType (FieldWord64 _) (FieldWord64 _) = True
-sameFieldType (FieldBool _) (FieldBool _)     = True
 sameFieldType (FieldString _) (FieldString _) = True
 sameFieldType FieldSorry FieldSorry           = True
 sameFieldType (FieldDouble _)  _              = False
@@ -133,7 +130,6 @@ sameFieldType (FieldWord8 _)   _              = False
 sameFieldType (FieldWord16 _)  _              = False
 sameFieldType (FieldWord32 _)  _              = False
 sameFieldType (FieldWord64 _)  _              = False
-sameFieldType (FieldBool _)    _              = False
 sameFieldType (FieldString _)  _              = False
 sameFieldType FieldSorry       _              = False
 
@@ -379,7 +375,6 @@ showFieldVal (FieldWord32 lens) _ x = show (x ^. lens)
 showFieldVal (FieldWord64 lens) _ x = show (x ^. lens)
 showFieldVal (FieldDouble lens) show' x = show' (x ^. lens)
 showFieldVal (FieldFloat lens) show' x = show' (realToFrac (x ^. lens))
-showFieldVal (FieldBool lens) _ x = show (x ^. lens)
 showFieldVal (FieldString lens) _ x = x ^. lens
 showFieldVal FieldSorry _ _ = ""
 
