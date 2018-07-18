@@ -72,7 +72,7 @@ instance (Lookup a, Lookup b, Lookup c, Lookup d) => Lookup (a, b, c, d) where
 -- TODO(MP): Product?  Const?  Identity?
 
 -- some instance from linear
-instance Lookup a => Lookup (Linear.V0 a) where
+instance Lookup (Linear.V0 a) where
   toAccessorTree _ =
     Right $ GAData "V0" $ GAConstructor "V0" []
 instance Lookup a => Lookup (Linear.V1 a) where

@@ -1,5 +1,6 @@
 HEAD
 ---
+* Remove redundant `Lookup a` constraint on `Lookup (V0 a)`
 * Switch Bool from basic type to sum type.
 
 0.7.0.0
