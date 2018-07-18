@@ -1,3 +1,11 @@
+HEAD
+---
+* Switch Bool from basic type to sum type.
+
+0.7.0.0
+---
+* Break Int into several integer types.
+
 0.6.2.0
 ---
 * bugfix diffDTree
