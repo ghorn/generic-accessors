@@ -58,6 +58,7 @@ data DField =
   | DWord32 Word32
   | DWord64 Word64
   | DString String
+  | DUnit
   | DSorry
   deriving (Generic, Show, Eq, Ord, Data, Typeable)
 instance Serialize DField
@@ -112,6 +113,7 @@ sameDFieldType (DWord16 _) (DWord16 _) = True
 sameDFieldType (DWord32 _) (DWord32 _) = True
 sameDFieldType (DWord64 _) (DWord64 _) = True
 sameDFieldType (DString _) (DString _) = True
+sameDFieldType DUnit DUnit             = True
 sameDFieldType DSorry DSorry           = True
 sameDFieldType (DDouble _) _           = False
 sameDFieldType (DFloat _)  _           = False
@@ -124,6 +126,7 @@ sameDFieldType (DWord16 _) _           = False
 sameDFieldType (DWord32 _) _           = False
 sameDFieldType (DWord64 _) _           = False
 sameDFieldType (DString _) _           = False
+sameDFieldType DUnit       _           = False
 sameDFieldType DSorry      _           = False
 
 describeDField :: DField -> String
@@ -138,6 +141,7 @@ describeDField (DWord64 _) = "Word64"
 describeDField (DDouble _) = "Double"
 describeDField (DFloat _)  = "Float"
 describeDField (DString _) = "String"
+describeDField DUnit       = "()"
 describeDField DSorry      = "Sorry"
 
 -- | convert to a dynamic value
@@ -168,6 +172,7 @@ toDData x = toDData' accessors
     toDField (FieldWord32 f) = DWord32 (x ^. f)
     toDField (FieldWord64 f) = DWord64 (x ^. f)
     toDField (FieldString f) = DString (x ^. f)
+    toDField FieldUnit       = DUnit
     toDField FieldSorry      = DSorry
 
 
@@ -255,6 +260,7 @@ updateField x0 (FieldWord16 f) (DWord16 x) = Right $ (f .~ x) x0
 updateField x0 (FieldWord32 f) (DWord32 x) = Right $ (f .~ x) x0
 updateField x0 (FieldWord64 f) (DWord64 x) = Right $ (f .~ x) x0
 updateField x0 (FieldString f) (DString x) = Right $ (f .~ x) x0
+updateField x0 FieldUnit _                 = Right x0
 updateField x0 FieldSorry _                = Right x0
 updateField _ f@(FieldDouble _) d          = Left (fieldMismatch f d)
 updateField _ f@(FieldFloat _)  d          = Left (fieldMismatch f d)

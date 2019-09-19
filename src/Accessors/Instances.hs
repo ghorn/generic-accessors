@@ -112,8 +112,8 @@ instance Lookup a => Lookup (Linear.Quaternion a) where
     ]
 
 -- basic types
-instance Lookup () where -- hack to get dummy tree
-  toAccessorTree _ = Left FieldSorry
+instance Lookup () where
+  toAccessorTree _ = Left FieldUnit
 instance Lookup Int8 where
   toAccessorTree lens = Left (FieldInt8 lens)
 instance Lookup Int16 where

@@ -62,6 +62,7 @@ data GAField a =
   | FieldWord32 (Lens' a Word32)
   | FieldWord64 (Lens' a Word64)
   | FieldString (Lens' a String)
+  | FieldUnit
   | FieldSorry -- ^ a field which is not yet supported
 
 data GATip a =
@@ -104,6 +105,7 @@ describeGAField (FieldWord16 _) = "Word16"
 describeGAField (FieldWord32 _) = "Word32"
 describeGAField (FieldWord64 _) = "Word64"
 describeGAField (FieldString _) = "String"
+describeGAField FieldUnit = "()"
 describeGAField FieldSorry      = "Sorry"
 
 -- | Returns True if the __type__ of fields is the same.
@@ -119,6 +121,7 @@ sameFieldType (FieldWord16 _) (FieldWord16 _) = True
 sameFieldType (FieldWord32 _) (FieldWord32 _) = True
 sameFieldType (FieldWord64 _) (FieldWord64 _) = True
 sameFieldType (FieldString _) (FieldString _) = True
+sameFieldType FieldUnit FieldUnit              = True
 sameFieldType FieldSorry FieldSorry           = True
 sameFieldType (FieldDouble _)  _              = False
 sameFieldType (FieldFloat _)   _              = False
@@ -131,6 +134,7 @@ sameFieldType (FieldWord16 _)  _              = False
 sameFieldType (FieldWord32 _)  _              = False
 sameFieldType (FieldWord64 _)  _              = False
 sameFieldType (FieldString _)  _              = False
+sameFieldType FieldUnit        _              = False
 sameFieldType FieldSorry       _              = False
 
 accessors :: Lookup a => AccessorTree a
@@ -376,6 +380,7 @@ showFieldVal (FieldWord64 lens) _ x = show (x ^. lens)
 showFieldVal (FieldDouble lens) show' x = show' (x ^. lens)
 showFieldVal (FieldFloat lens) show' x = show' (realToFrac (x ^. lens))
 showFieldVal (FieldString lens) _ x = x ^. lens
+showFieldVal FieldUnit _ _ = "()"
 showFieldVal FieldSorry _ _ = ""
 
 showTipVal :: GATip a -> (Double -> String) -> a -> String
