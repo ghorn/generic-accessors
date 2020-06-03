@@ -16,6 +16,7 @@ module Accessors
        , showTree
        , showFlat
        , GLookup(..)
+       , GEnum(..)
        ) where
 
 import Accessors.Accessors

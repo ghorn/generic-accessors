@@ -23,6 +23,7 @@ module Accessors.Accessors
        , showTree
        , showFlat
        , GLookup(..)
+       , GEnum(..)
        ) where
 
 import GHC.Generics
