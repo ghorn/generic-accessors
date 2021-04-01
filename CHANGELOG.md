@@ -1,5 +1,10 @@
 HEAD
 ---
+* ...
+
+0.7.1.0
+---
+* Support for ()
 * Remove redundant `Lookup a` constraint on `Lookup (V0 a)`
 * Switch Bool from basic type to sum type.
 
